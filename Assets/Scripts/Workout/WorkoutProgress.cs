@@ -10,14 +10,19 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     public TMP_Text exerciseText;
     public Timetext timerText;
     public TMP_Text getReadyText;
+
     public Button pauseButton;
-    private TMP_Text pauseText;
+    public Button playButton;
+    public Button repeatButton;
+    public Button stopButton;
 
     public Image backgroundImage;
+    private Color backgroundColor; //For lerping color
 
     public Color readyColor;
     public Color workColor;
     public Color restColor;
+    public Color finishedColor;
 
     public AudioSource secondBeep; //Beep sound for each countdown second
     public AudioSource roundBeep;  //Beep sound after each round
@@ -32,20 +37,21 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
     private void Awake()
     {
-        pauseButton.interactable = false;
-        pauseText = pauseButton.GetComponentInChildren<TMP_Text>();
         getReadyText.text = "GET READY";
     }
 
-    //private void OnEnable()
-    //{
-    //    paused = false;
-    //}
+    private void Update()
+    {
+        backgroundImage.color = Color.Lerp(backgroundImage.color, backgroundColor, Time.deltaTime * 1);
+    }
 
-    //private void OnDisable()
-    //{
-    //    paused = true;
-    //}
+    private void togglePausePlayButton()
+    {
+        pauseButton.gameObject.SetActive(!paused);
+        pauseButton.interactable =!paused;
+        playButton.gameObject.SetActive(paused);
+        playButton.interactable = paused;
+    }
 
     public bool isInProgress()
     {
@@ -58,12 +64,24 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         paused = false;
         cancelled = true;
         StopCoroutine("workoutLoop");
+        AppManager.Instance.backButtonPressed();
     }
 
-    public void togglePause()
+    public void play()
     {
-        paused = !paused;
-        pauseText.text = paused ? "Hervatten" : "Pauzeren";
+        paused = false;
+        togglePausePlayButton();
+    }
+
+    public void pause()
+    {
+        paused = true;
+        togglePausePlayButton();
+    }
+
+    public void restart()
+    {
+        startWorkout(currentWorkout);
     }
 
     public void startWorkout(WorkoutPanel.Workout workout)
@@ -73,7 +91,10 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
         exerciseText.text = "";
+        repeatButton.interactable = false;
         pauseButton.interactable = false;
+        playButton.interactable = false;
+        stopButton.interactable = true;
         currentWorkout = workout;
         StartCoroutine(workoutCountdown());
     }
@@ -82,9 +103,10 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     {
         setText.gameObject.SetActive(false);
         exerciseText.gameObject.SetActive(false);
-        getReadyText.gameObject.SetActive(true);        
+        getReadyText.gameObject.SetActive(true);
+        timerText.gameObject.SetActive(true);
 
-        backgroundImage.color = readyColor;        
+        backgroundColor = readyColor;
         int seconds = countdownSeconds;
         while(seconds > 0)
         {
@@ -109,15 +131,17 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
             setText.gameObject.SetActive(true);
             setText.text = (i + 1).ToString() + " / " + currentWorkout.globalSets;
 
+            int exerciseCount = 0;
             foreach (KeyValuePair<string, ExerciseDataItem> pair in currentWorkout.exercises)
             {
+                exerciseCount++;
                 ExerciseDataItem exercise = pair.Value;
 
                 exerciseText.gameObject.SetActive(true);
                 exerciseText.text = exercise.name.ToUpper();
 
                 int workoutSeconds = currentWorkout.globalWorkTime;
-                backgroundImage.color = workColor;
+                backgroundColor = workColor;
 
                 timerText.setTimeText(workoutSeconds);
                 roundBeep.Play();
@@ -125,35 +149,53 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
                 while (workoutSeconds > 0)
                 {
-                    if(!pauseButton.interactable) pauseButton.interactable = true;                    
+                    if(!pauseButton.interactable) pauseButton.interactable = true;
+                    if(workoutSeconds <= 3) secondBeep.Play();
+
+                    timerText.setTimeText(workoutSeconds);
                     yield return new WaitForSecondsRealtime(1.0f);
                     workoutSeconds--;
 
                     if (paused) yield return new WaitUntil(() => !paused);
-                    if (!timerText.gameObject.activeSelf) timerText.gameObject.SetActive(true);
-                    timerText.setTimeText(workoutSeconds);
+                    if (!timerText.gameObject.activeSelf) timerText.gameObject.SetActive(true);                    
                 }
 
-                exerciseText.text = "Rest";
-                int restSeconds = currentWorkout.globalRestTime;
-                backgroundImage.color = restColor;
-
-                timerText.setTimeText(restSeconds);
                 roundBeep.Play();
                 yield return new WaitForSecondsRealtime(roundBeep.clip.length);
 
-                while (restSeconds > 0)
+                if (exerciseCount != currentWorkout.exercises.Count)
                 {
-                    if (!pauseButton.interactable) pauseButton.interactable = true;
-                    yield return new WaitForSecondsRealtime(1.0f);
-                    restSeconds--;
+                    exerciseText.text = "Rest";
+                    int restSeconds = currentWorkout.globalRestTime;
+                    backgroundColor = restColor;
 
-                    if (paused) yield return new WaitUntil(() => !paused);
-                    timerText.setTimeText(restSeconds);                    
+                    while (restSeconds > 0)
+                    {
+                        if (!pauseButton.interactable) pauseButton.interactable = true;
+                        if (restSeconds <= 3) secondBeep.Play();
+
+                        timerText.setTimeText(restSeconds);
+                        yield return new WaitForSecondsRealtime(1.0f);
+                        restSeconds--;
+
+                        if (paused) yield return new WaitUntil(() => !paused);                        
+                    }
                 }
-            }            
+            }
         }
 
-        PanelNavigator.Instance.goToPanel(0);
+        workoutFinished();
+    }
+
+    private void workoutFinished()
+    {
+        backgroundColor = finishedColor;
+        exerciseText.text = "Finished!";
+        timerText.gameObject.SetActive(false);
+        repeatButton.gameObject.SetActive(true);
+        repeatButton.interactable = true;
+        stopButton.interactable = false;
+        playButton.interactable = false;
+        pauseButton.interactable = false;
     }
 }
