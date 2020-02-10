@@ -1,0 +1,30 @@
+FIX:
+
+Low prio: try to fix panel/sub-panel managers, only relevant when more screen are added!
+
+TODO:
+
+- Make it possible to select no exercises for a workout
+	- Prompt user to select number of round per set in a dialog
+	- The "exercise" name displayed will just be "Work"
+
+- Make workout setups with time, count and random
+	- Two buttons on start with Timed / Counted?
+	- Buttons with modes above the setup screen?
+	- Add random button for both timed and counted
+	- Counted has a global count at first
+
+- Add a way to select multiple exercises for workout
+- And also have a (better) visual for currently selected workouts
+	- Could make a comma seperated list above/underneath the exercise list
+	- Add x2,x3 .etc when selected more than once
+	
+- Add some fun animations
+	- Make numbers pop when adding time
+	- Flip screen when going to next screen
+	- Make logo pulse at 3,2,1 ?
+	
+- Save/load workouts in json format
+- Add new workouts (Combine?)
+- Configurable work/rest times in setting screen
+- Exercise count per round set individually (instead of global)

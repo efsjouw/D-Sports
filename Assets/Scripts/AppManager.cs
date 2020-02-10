@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
@@ -10,13 +7,21 @@ using UnityEngine.Events;
 /// </summary>
 public class AppManager : Singleton<AppManager>
 {
+    public WorkoutPanel workoutPanel;
+
     public UnityEvent onBackButtonPressed;
     public KeyCode backButton = KeyCode.Escape;
 
-    //private void Awake()
-    //{
-    //    Screen.fullScreen = false;
-    //}
+    public Color androidNavBarColor;
+    public Color androidStatusBarColor;
+
+    private void Awake()
+    {
+        Screen.fullScreen = false;
+        //FIXME: Exception: Field currentActivity or type signature  not found
+        //AndroidUtils.setNavigationBarColor(androidNavBarColor);
+        //AndroidUtils.setStatusBarColor(androidStatusBarColor);
+    }
 
     void Start()
     {
@@ -36,8 +41,16 @@ public class AppManager : Singleton<AppManager>
         bool previousPanel = false;
         if (PanelNavigator.Instance.currentSubPanelNavigator != null)
         {
-            //Is a subpanel assigned and can we go back in history
-            previousPanel = PanelNavigator.Instance.currentSubPanelNavigator.goToPreviousInHistory();
+            //FIXME: Quick fix for list that is not really displayed in a next panel...
+            if (PanelNavigator.Instance.currentSubPanelNavigator.getCurrentIndex() == 0)
+            {
+                workoutPanel.createWorkout();
+            }
+            else
+            {
+                //Is a subpanel assigned and can we go back in history
+                previousPanel = PanelNavigator.Instance.currentSubPanelNavigator.goToPreviousInHistory();
+            }                   
         }
         else
         {

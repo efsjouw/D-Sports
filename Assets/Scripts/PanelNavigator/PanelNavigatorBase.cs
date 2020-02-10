@@ -155,6 +155,15 @@ public abstract class PanelNavigatorBase : MonoBehaviour
     }
 
     /// <summary>
+    /// Get current index
+    /// </summary>
+    /// <returns></returns>
+    public int getCurrentIndex()
+    {
+        return currentIndex;
+    }
+
+    /// <summary>
     /// Get panel entry by name
     /// </summary>
     /// <param name="name"></param>
