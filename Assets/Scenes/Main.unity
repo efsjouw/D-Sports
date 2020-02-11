@@ -9545,7 +9545,7 @@ MonoBehaviour:
   currentSubPanelNavigator: {fileID: 0}
   startIndex: 0
   maxHistorySize: 10
-  enableEscapeKey: 1
+  enableEscapeKey: 0
   defaultOrientation: 1
   useDefaultOrientation: 0
   backButton: 97

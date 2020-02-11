@@ -26,6 +26,10 @@ public class AppManager : Singleton<AppManager>
     void Start()
     {
         //onBackButtonPressed
+
+#if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
+        backButton = KeyCode.Escape;
+#endif
     }
 
     void Update()

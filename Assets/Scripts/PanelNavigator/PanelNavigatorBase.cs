@@ -97,7 +97,7 @@ public abstract class PanelNavigatorBase : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(backButton)) goToPreviousInHistory();
+        if (enableEscapeKey && Input.GetKeyDown(backButton)) goToPreviousInHistory();
     }
 
     /// <summary>
