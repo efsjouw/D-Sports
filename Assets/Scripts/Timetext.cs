@@ -25,4 +25,10 @@ public class Timetext : MonoBehaviour
         tmp.text = format;
     }
 
+    public void setText(string text)
+    {
+        if (tmp == null) tmp = GetComponent<TMP_Text>();
+        tmp.text = text;
+    }
+
 }

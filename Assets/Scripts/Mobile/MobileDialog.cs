@@ -10,63 +10,110 @@ using UnityEngine.UI;
 /// Shows a dialog with dynamically added buttons
 /// </summary>
 [RequireComponent(typeof(Button))]
-public class MobileDialog : MonoBehaviour
+public class MobileDialog : Singleton<MobileDialog>
 {
+    public enum ButtonMode {
+        AcceptDismiss,  //Show both buttons
+        Accept,         //Show accept button
+        Dismiss,        //Show dismiss button        
+        None            //Show no buttons
+    };
 
-    public enum ButtonPreset { CancelOk, Cancel, Ok, None };
-    public enum InputMode { Text, None };
+    //Public
 
-    public GameObject dialogObject;
+    [Header("Objects")]
+    public GameObject dialogParent;
+    public GameObject buttonPrefab;
+
+    [Header("Contents")]
+    public TMP_Text titleText;
+    public TMP_Text descriptionText;
     public Transform dialogContent;
 
-    public TMP_Text titleText;
-    public TMP_Text messageText;
-
-    public InputField textInput;
+    [Header("Background")]
     public Image backgroundImage;
+    public Button backgroundButton;
 
-    [Header("Loading Graphics")]
+    [Header("Request Progress")]
     public Image progressImage;
 
-    //Loading graphics values (disabled)
-    private float progressHeight;
-    private Vector2 sizeDeltaTarget;
-
     [Header("Buttons")]
-    public Button backgroundButton;
-    public GameObject buttonPrefab;
     public HorizontalLayoutGroup buttonLayout;
-    private RectTransform buttonLayoutRect;
 
-    //Current blocking web request, optional
-    private UnityWebRequest blockingRequest;
+    //Default accept/dismiss strings
+    [SerializeField] private string acceptDefault;
+    [SerializeField] private string dismissDefault;
 
-    [HideInInspector]
-    public bool downloading;
+    [HideInInspector] public bool downloading;
 
-    //Seperate strings for translation support
-    private string okString = "Ok";
-    private string cancelString = "Cancel";
+    //Private
 
-    /// <summary>
-    /// Enable the dialog in the scene first!
-    /// </summary>
+    private RectTransform buttonLayoutRectransform;
+    private UnityWebRequest webRequest;
+
+    //Loading graphics
+    //private float progressBarHeight;
+    //private Vector2 targetSizeDelta;
+
     void Start()
     {
-        progressHeight = progressImage.rectTransform.sizeDelta.y;
-        sizeDeltaTarget = progressImage.rectTransform.sizeDelta;
-        buttonLayoutRect = buttonLayout.GetComponent<RectTransform>();
+        //progressBarHeight = progressImage.rectTransform.sizeDelta.y;
+        //targetSizeDelta = progressImage.rectTransform.sizeDelta;
+        buttonLayoutRectransform = buttonLayout.GetComponent<RectTransform>();
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape)) cancelAndClose();
+        if (Input.GetKeyDown(KeyCode.Escape)) abortAndClose();
     }
 
-    /// <summary>
-    /// Clear all buttons
-    /// </summary>
-    /// <returns></returns>
+    //Show functions
+
+    public MobileDialog show(string title = "", string message = "")
+    {
+        //Reset background image
+        setBackground(null, 0);
+
+        //Enable text elements
+        titleText.text = title;
+        descriptionText.text = message;
+        dialogParent.SetActive(true);
+        return this;
+    }
+
+    public MobileDialog show(ButtonMode buttonMode, string title = "", string description = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
+    {
+        //Reset background
+        setBackground(null, 0);
+
+        //Set button mode
+        setButtonMode(buttonMode, positiveCallback, negativeCallback);
+
+        //Disable and enable elements
+        clearContent();
+        titleText.text = title;
+        titleText.gameObject.SetActive(true);
+        descriptionText.text = description;
+        descriptionText.gameObject.SetActive(true);
+        dialogParent.SetActive(true);
+
+        return this;
+    }
+
+    public void show(string title, string description, UnityWebRequest request, bool abortable = true, UnityAction negativeCallback = null)
+    {
+        if (abortable) createCancelButton(dismissDefault, negativeCallback);
+        else setButtonMode(ButtonMode.None);
+
+        titleText.text = title;
+        dialogParent.SetActive(true);
+        descriptionText.gameObject.SetActive(true);
+        webRequest = request;
+        StartCoroutine(progressRoutine());
+    }
+
+    //Clear functions
+
     public MobileDialog clearButtons()
     {
         foreach (Transform child in buttonLayout.transform)
@@ -76,59 +123,14 @@ public class MobileDialog : MonoBehaviour
         return this;
     }
 
-    /// <summary>
-    /// Clear all buttons and elements
-    /// </summary>
-    /// <returns></returns>
-    public MobileDialog clear()
+    public MobileDialog clearAll()
     {
         clearButtons();
-        disableContents(true);
+        clearContent();
         return this;
     }
 
-    /// <summary>
-    /// Add a button to the layout group
-    /// </summary>
-    /// <param name="text"></param>
-    /// <param name="UnityAction"></param>
-    /// <param name="rebuildLayout"></param>
-    /// <returns></returns>
-    public MobileDialog addButton(string text, UnityAction UnityAction, bool rebuildLayout = true)
-    {
-        GameObject buttonContainer = Instantiate(buttonPrefab, buttonLayout.transform);
-        buttonContainer.SetActive(true); //In case prefab was disabled
-        Button button = buttonContainer.GetComponentInChildren<Button>();
-        buttonContainer.GetComponentInChildren<TMP_Text>().text = text;
-        button.onClick.AddListener(UnityAction);
-        if (rebuildLayout) LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
-        return this;
-    }
-
-    /// <summary>
-    /// Show the dialog
-    /// TODO: Merge/reuse with preset show()?
-    /// </summary>
-    /// <param name="title"></param>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    public MobileDialog show(string title = "", string message = "")
-    {
-        //Reset background image
-        setBackgroundImage(null, 0);
-
-        //Enable text elements
-        titleText.text = title;
-        messageText.text = message;
-        dialogObject.SetActive(true);
-        return this;
-    }
-
-    /// <summary>
-    /// Disables all contents so you can enable your own
-    /// </summary>
-    /// <returns></returns>
-    private MobileDialog disableContents(bool clear = true)
+    private MobileDialog clearContent()
     {
         foreach (Transform child in dialogContent)
         {
@@ -137,110 +139,66 @@ public class MobileDialog : MonoBehaviour
         return this;
     }
 
-    /// <summary>
-    /// Show the dialog with a button preset and callbacks
-    /// </summary>
-    /// <param name="buttonPreset"></param>
-    /// <param name="title"></param>
-    /// <param name="message"></param>
-    /// <param name="positiveCallback"></param>
-    /// <param name="negativeCallback"></param>
-    /// <returns></returns>
-    public MobileDialog show(ButtonPreset buttonPreset, string title = "", string message = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
+    // Buttons
+
+    public MobileDialog addButton(string text, UnityAction UnityAction, bool rebuild = true)
     {
-
-        //Reset background image
-        setBackgroundImage(null, 0);
-
-        //Apply buttons
-        applyButtonPreset(buttonPreset, positiveCallback, negativeCallback);
-
-        //Disable and enable elements
-        disableContents();
-        titleText.text = title;
-        titleText.gameObject.SetActive(true);
-        messageText.text = message;
-        messageText.gameObject.SetActive(true);
-        dialogObject.SetActive(true);
-
+        GameObject buttonContainer = Instantiate(buttonPrefab, buttonLayout.transform);        
+        Button button = buttonContainer.GetComponentInChildren<Button>();
+        buttonContainer.GetComponentInChildren<TMP_Text>().text = text;
+        button.onClick.AddListener(UnityAction);
+        buttonContainer.SetActive(true);
+        if (rebuild) LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
         return this;
     }
 
-    /// <summary>
-    /// Sets the disabling background callback UnityAction
-    /// </summary>
-    /// <param name="backgroundCallback"></param>
-    private void setBackgroundCallback(UnityAction backgroundCallback)
-    {
-        UnityAction callback = backgroundCallback ?? cancelAndClose;
-        backgroundButton.onClick.RemoveAllListeners();
-        backgroundButton.onClick.AddListener(callback);
-    }
-
-    /// <summary>
-    /// Apply a button preset with callbacks
-    /// </summary>
-    /// <param name="buttonPreset"></param>
-    /// <param name="positiveCallback"></param>
-    /// <param name="negativeCallback"></param>
-    private void applyButtonPreset(ButtonPreset buttonPreset, UnityAction positiveCallback = null, UnityAction negativeCallback = null)
+    private void setButtonMode(ButtonMode buttonPreset, UnityAction positiveCallback = null, UnityAction negativeCallback = null)
     {
         setBackgroundCallback(negativeCallback);
         switch (buttonPreset)
         {
-            case ButtonPreset.CancelOk:
-                setUpOKCancelButtons(okString, cancelString, positiveCallback, negativeCallback);
+            case ButtonMode.AcceptDismiss:
+                clearButtons()
+                .addButton(acceptDefault, positiveCallback ?? abortAndClose)
+                .addButton(dismissDefault, negativeCallback ?? abortAndClose);
+                setBackgroundCallback(negativeCallback);
                 break;
-            case ButtonPreset.Cancel:
-                setUpCancelButton(cancelString, positiveCallback);
+            case ButtonMode.Dismiss:
+                UnityAction cancel = negativeCallback ?? abortAndClose;
+                clearButtons().addButton(dismissDefault ?? dismissDefault, cancel);
+                setBackgroundCallback(cancel);
                 break;
-            case ButtonPreset.Ok:
-                setUpCancelButton(okString, positiveCallback);
-                break;
-            case ButtonPreset.None:
-                clearButtons();
-                break;
+            case ButtonMode.Accept: createCancelButton(acceptDefault, positiveCallback); break;
+            case ButtonMode.None: clearButtons(); break;
         }
     }
 
-    /// <summary>
-    /// TODO: Finish this idea
-    /// </summary>
-    /// <param name="inputMode"></param>
-    private void setInputMode(InputMode inputMode)
+    private void createCancelButton(string text = null, UnityAction cancelCallback = null)
     {
-        //disable inputs
-        switch (inputMode)
-        {
-            case InputMode.None: break;
-            case InputMode.Text:
-                textInput.gameObject.SetActive(true);
-                break;
-        }
+        UnityAction cancel = cancelCallback ?? abortAndClose;
+        clearButtons()
+        .addButton(text ?? dismissDefault, cancel);
+        setBackgroundCallback(cancel);
     }
 
-    /// <summary>
-    /// Show the dialog with progress of a webrequest
-    /// </summary>
-    /// <param name="title"></param>
-    /// <param name="request"></param>
-    public void showRequestProgress(string title, string description, UnityWebRequest request, bool showCancel = true, UnityAction negativeCallback = null)
+    // Callback
+
+    private void setBackgroundCallback(UnityAction backgroundCallback)
     {
-
-        if (showCancel) setUpCancelButton(cancelString, negativeCallback);
-        else applyButtonPreset(ButtonPreset.None);
-
-        titleText.text = title;
-        dialogObject.SetActive(true);
-        messageText.gameObject.SetActive(true);
-        blockingRequest = request;
-        StartCoroutine(progressRoutine());
+        UnityAction callback = backgroundCallback ?? abortAndClose;
+        backgroundButton.onClick.RemoveAllListeners();
+        backgroundButton.onClick.AddListener(callback);
     }
 
-    /// <summary>
-    /// Show request progress when not done
-    /// </summary>
-    /// <returns></returns>
+    // Background
+
+    public void setBackground(Sprite sprite, float alpha = 0.33f)
+    {
+        backgroundImage.sprite = sprite;
+    }    
+
+    // Request
+
     private IEnumerator progressRoutine()
     {
         downloading = true;
@@ -250,124 +208,44 @@ public class MobileDialog : MonoBehaviour
             yield return null;
         }
         downloading = false;
-        dialogObject.SetActive(false);
+        dialogParent.SetActive(false);
     }
 
     private float tryGetDownloadProgress()
     {
-        try { return blockingRequest.downloadProgress; }
+        try { return webRequest.downloadProgress; }
         catch (ArgumentException e) { return 1.0f; }
     }
 
-    /// <summary>
-    /// Set the current request progress
-    /// </summary>
-    /// <param name="downloadProgress"></param>
     private void setProgress(float downloadProgress)
     {
-        messageText.text = String.Format("{0}%", Math.Floor(downloadProgress * 100), 1);
+        descriptionText.text = String.Format("{0}%", Math.Floor(downloadProgress * 100), 1);
         //TODO: progress bar
         //progressImage.rectTransform.sizeDelta = new Vector2((sizeDeltaTarget.x / 100) * downloadProgress, progressHeight);
     }
 
-    /// <summary>
-    /// Toggle the dialog on/off
-    /// </summary>
+    public void abortAndClose()
+    {
+        bool abort = downloading && webRequest != null;
+        if (abort)
+        {
+            //When using Abort() UnityWebRequest will interpret this as a network error
+            webRequest.Abort();
+            downloading = webRequest.isDone;
+        }
+        toggle();
+    }
+
+    // Other
+
     public void toggle(bool force = false)
     {
         enabled = force ? force : !gameObject.activeSelf;
-        dialogObject.SetActive(enabled);
+        dialogParent.SetActive(enabled);
     }
 
-    /// <summary>
-    /// Create ok/cancel buttons
-    /// </summary>
-    /// <param name="positiveText"></param>
-    /// <param name="negativeText"></param>
-    /// <param name="positiveCallback"></param>
-    /// <param name="negativeCallback"></param>
-    private void setUpOKCancelButtons(string positiveText, string negativeText, UnityAction positiveCallback = null, UnityAction negativeCallback = null)
+    public bool isEnabled()
     {
-        UnityAction positive = positiveCallback ?? cancelAndClose;
-        UnityAction negative = negativeCallback ?? cancelAndClose;
-        clearButtons()
-        .addButton(positiveText, positive)
-        .addButton(negativeText, negative);
-        setBackgroundCallback(negative);
-    }
-
-    /// <summary>
-    /// Setup a cancel button, give it a callback for a custom cancel UnityAction
-    /// Use the returned button to add callbacks on click
-    /// </summary>
-    /// <param name="callback"></param>
-    private void setUpCancelButton(string text = null, UnityAction cancelCallback = null)
-    {
-        UnityAction cancel = cancelCallback ?? cancelAndClose;
-        clearButtons()
-        .addButton(text ?? cancelString, cancel);
-        setBackgroundCallback(cancel);
-    }
-
-    /// <summary>
-    /// Show dialog with input field
-    /// </summary>
-    /// <param name="title"></param>
-    /// <param name="positiveCallback"></param>
-    /// <param name="negativeCallback"></param>
-    public void showInputDialog(string title, string inputText = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
-    {
-        disableContents();
-        titleText.text = title;
-        titleText.gameObject.SetActive(true);
-        textInput.text = inputText;
-        textInput.gameObject.SetActive(true);
-        setUpOKCancelButtons(okString, cancelString, positiveCallback, negativeCallback);
-        toggle(true);
-    }
-
-    /// <summary>
-    /// Show fullscreen text dialog
-    /// </summary>
-    /// <param name="text"></param>
-    /// <param name="positiveCallback"></param>
-    /// <param name="negativeCallback"></param>
-    //public void showTextDialog(string text, bool clear = true, UnityAction positiveCallback = null) {
-    //    disableContents(clear);
-    //    addFullTextObject(text);
-    //    textScrollRect.gameObject.SetActive(true);
-    //    setUpCancelButton("Close", positiveCallback);
-    //    toggle(true);
-    //}
-
-    /// <summary>
-    /// Cancel and close dialog, abort request
-    /// </summary>
-    public void cancelAndClose()
-    {
-        bool shouldAbort = downloading && blockingRequest != null;
-        if (shouldAbort)
-        {
-            //When using Abort() UnityWebRequest will interpret this as a network error
-            blockingRequest.Abort();
-            downloading = false;
-        }
-        if (dialogObject.activeSelf) dialogObject.SetActive(false);
-    }
-
-    public bool isVisible()
-    {
-        return dialogObject.activeSelf;
-    }
-
-    /// <summary>
-    /// Set background image but keep it transparent so the text is still readable
-    /// Note: the image is reset on showing the dialog!
-    /// </summary>
-    /// <param name="sprite"></param>
-    /// <param name="alpha"></param>
-    public void setBackgroundImage(Sprite sprite, float alpha = 0.33f)
-    {
-        backgroundImage.sprite = sprite;
+        return dialogParent.activeSelf;
     }
 }

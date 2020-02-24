@@ -3,10 +3,34 @@
 		"name" : "push-up"
 	},
 	{
-		"name" : "squat"
+		"name" : "diamond push-up"
 	},
 	{
-		"name" : "situp"
+		"name" : "push-up rotations"
+	},
+	{
+		"name" : "wide push-up"
+	},
+	{
+		"name" : "pike push-up"
+	},
+	{
+		"name" : "type writer push-up"
+	},
+	{
+		"name" : "prison squat"
+	},
+	{
+		"name" : "dragon squat"
+	},
+	{
+		"name" : "goblet squat"
+	},
+	{
+		"name" : "overhead squat"
+	},
+	{
+		"name" : "pistol squat"
 	},
 	{
 		"name" : "high knee"
@@ -15,28 +39,37 @@
 		"name" : "jump"
 	},
 	{
-		"name" : "squat"
+		"name" : "high plank"
 	},
 	{
-		"name" : "high plank"
+		"name" : "elbow plank"
+	},
+	{
+		"name" : "knee to elbow plank"
 	},
 	{
 		"name" : "burpee"
 	},
 	{
-		"name" : "lunge"
+		"name" : "front lunge"
+	},
+	{
+		"name" : "back lunge"
 	},
 	{
 		"name" : "jumping jack"
 	},
 	{
-		"name" : "sit-up"
+		"name" : "sit-ups"
 	},
 	{
 		"name" : "mountain climber"
 	},	
 	{
 		"name" : "butt kicks"
+	},
+	{
+		"name" : "flutter kicks"
 	},
 	{
 		"name" : "rope skip"
@@ -51,19 +84,10 @@
 		"name" : "windshield wipers"
 	},
 	{
-		"name" : "elbow plank"
-	},
-	{
 		"name" : "leg raises"
 	},
 	{
 		"name" : "shoulder taps"
-	},
-	{
-		"name" : "diamond push-up"
-	},
-	{
-		"name" : "push-up rotations"
 	},
 	{
 		"name" : "arches"	
@@ -75,7 +99,10 @@
 		"name" : "crunches"
 	},
 	{
-		"name" : "wide push-up"
+		"name" : "russian twist"
+	},
+	{
+		"name" : "weighted russian twist"
 	},
 	{
 		"name" : "get up"
@@ -100,5 +127,14 @@
 	},
 	{
 		"name" : "chin-ups"
+	},
+	{
+		"name" : "inside outs"
+	},
+	{
+		"name" : "tricep dips"
+	},
+	{
+		"name" : "knees to elbows"
 	}
 ]

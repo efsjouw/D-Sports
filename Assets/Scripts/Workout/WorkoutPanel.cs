@@ -17,6 +17,10 @@ public class WorkoutPanel : MonoBehaviour
     public Timetext workText;
     public Timetext restText;
 
+    public GameObject totalTimeParent;  //Parent object
+    public Timetext totalTimeText;      //Total round time
+    public TMP_Text totalSetText;       //Total set amount
+
     //Used for inspector button functions
     //TODO: uppercase enum (change inspector calls)
     public enum optionType { work, rest, sets };
@@ -71,7 +75,9 @@ public class WorkoutPanel : MonoBehaviour
     /// </summary>
     public void createWorkout() {
 
+        totalTimeParent.gameObject.SetActive(false);
         listController.hideList("exercises");
+
         state = setupState.Configuration;
 
         newWorkout = createNewWorkout();
@@ -115,13 +121,20 @@ public class WorkoutPanel : MonoBehaviour
             case setupState.SelectExercises: selectExercises(); break;
             case setupState.StartWorkout:
                 if (newWorkout.exercises.Count >= 1) startWorkout();
-                else MobilePopup.Instance.toast.show("Selecteer minstens 1 oefening");
+                else
+                {
+                    //MobilePopup.Instance.toast.show("Selecteer minstens 1 oefening");
+                    MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Select rounds", "No exercises selected, set a number of rounds");
+                }
                 break;
         }
     }
 
     private void selectExercises()
     {
+        totalSetText.text = "x" + newWorkout.globalSets;
+        totalTimeParent.gameObject.SetActive(true);
+        totalTimeText.setTimeText(0);
         workoutSetupContent.gameObject.SetActive(false);
         listController.showList("exercises", onClickExerciseItem);
         //TODO: Doesnt appear to work, how to sync rect transform in other canvas?
@@ -189,7 +202,12 @@ public class WorkoutPanel : MonoBehaviour
             buttonImage.color = pressedButtonColor;
         }
 
-        //MobilePopup.Instance.toast.show(message);       
+        //We can just add work and rest time together as each exercise will have rest with multiple sets
+        //But we need to substract one rest time as the last set will not have rest, it will finish
+        int subtractTime = 0;
+        if (newWorkout.exercises.Count > 0) subtractTime = newWorkout.globalRestTime;
+        totalTimeText.setTimeText(((newWorkout.globalWorkTime + newWorkout.globalRestTime) * newWorkout.exercises.Count) - subtractTime);
+        //MobilePopup.Instance.toast.show(message);
     }
     
 }
