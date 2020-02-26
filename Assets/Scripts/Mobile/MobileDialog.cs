@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections;
-using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.Networking;
-using UnityEngine.UI;
+using System.Collections.Generic;
+using TMPro;
 
 /// <summary>
 /// Shows a dialog with dynamically added buttons
@@ -15,30 +15,40 @@ public class MobileDialog : Singleton<MobileDialog>
     public enum ButtonMode {
         AcceptDismiss,  //Show both buttons
         Accept,         //Show accept button
-        Dismiss,        //Show dismiss button        
+        Dismiss,        //Show dismiss button
         None            //Show no buttons
     };
+
+    /// <summary>
+    /// List of prefabs can be extended with your own prefabs
+    /// Must contains the buttonPrefabKey key/prefab
+    /// </summary>
+    [Serializable]
+    public class CustomPrefab
+    {
+        public string name;
+        public GameObject prefab;
+    }
+    public List<CustomPrefab> customPrefabs;
+    public Dictionary<string, GameObject> _customPrefabs;
 
     //Public
 
     [Header("Objects")]
     public GameObject dialogParent;
-    public GameObject buttonPrefab;
+    public string buttonPrefabKey = "button";
+    public string descriptionPrefabKey = "description";
 
-    [Header("Contents")]
-    public TMP_Text titleText;
-    public TMP_Text descriptionText;
-    public Transform dialogContent;
+    [Header("Title")]
+    public TMP_Text titleText;    
 
     [Header("Background")]
     public Image backgroundImage;
     public Button backgroundButton;
 
-    [Header("Request Progress")]
-    public Image progressImage;
-
-    [Header("Buttons")]
-    public HorizontalLayoutGroup buttonLayout;
+    [Header("Layouts")]
+    public HorizontalOrVerticalLayoutGroup contentLayout;
+    public HorizontalOrVerticalLayoutGroup buttonLayout;
 
     //Default accept/dismiss strings
     [SerializeField] private string acceptDefault;
@@ -51,15 +61,14 @@ public class MobileDialog : Singleton<MobileDialog>
     private RectTransform buttonLayoutRectransform;
     private UnityWebRequest webRequest;
 
-    //Loading graphics
-    //private float progressBarHeight;
-    //private Vector2 targetSizeDelta;
-
     void Start()
     {
-        //progressBarHeight = progressImage.rectTransform.sizeDelta.y;
-        //targetSizeDelta = progressImage.rectTransform.sizeDelta;
         buttonLayoutRectransform = buttonLayout.GetComponent<RectTransform>();
+        _customPrefabs = new Dictionary<string, GameObject>();
+        foreach (CustomPrefab customPrefab in customPrefabs)
+        {
+            _customPrefabs.Add(customPrefab.name, customPrefab.prefab);
+        }
     }
 
     private void Update()
@@ -69,14 +78,14 @@ public class MobileDialog : Singleton<MobileDialog>
 
     //Show functions
 
-    public MobileDialog show(string title = "", string message = "")
+    public MobileDialog show(string title = "", string description = "")
     {
         //Reset background image
         setBackground(null, 0);
 
         //Enable text elements
         titleText.text = title;
-        descriptionText.text = message;
+        setDescriptionContent(description);
         dialogParent.SetActive(true);
         return this;
     }
@@ -93,8 +102,7 @@ public class MobileDialog : Singleton<MobileDialog>
         clearContent();
         titleText.text = title;
         titleText.gameObject.SetActive(true);
-        descriptionText.text = description;
-        descriptionText.gameObject.SetActive(true);
+        setDescriptionContent(description);
         dialogParent.SetActive(true);
 
         return this;
@@ -107,9 +115,9 @@ public class MobileDialog : Singleton<MobileDialog>
 
         titleText.text = title;
         dialogParent.SetActive(true);
-        descriptionText.gameObject.SetActive(true);
+        setDescriptionContent(description);
         webRequest = request;
-        StartCoroutine(progressRoutine());
+        //StartCoroutine(progressRoutine());
     }
 
     //Clear functions
@@ -132,18 +140,36 @@ public class MobileDialog : Singleton<MobileDialog>
 
     private MobileDialog clearContent()
     {
-        foreach (Transform child in dialogContent)
+        foreach (Transform child in contentLayout.transform)
         {
             child.gameObject.SetActive(false);
         }
         return this;
     }
 
+    public MobileDialog setDescriptionContent(string description)
+    {
+        clearContent();
+        GameObject buttonContainer = Instantiate(_customPrefabs[descriptionPrefabKey], contentLayout.transform);
+        TMP_Text tmp = buttonContainer.GetComponentInChildren<TMP_Text>();
+        tmp.text = description;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
+        return this;
+    }
+
+    public MobileDialog addContent(string prefabName = null, bool rebuild = true)
+    {
+        GameObject buttonContainer = Instantiate(_customPrefabs[prefabName], contentLayout.transform);
+        if (rebuild) LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
+        return this;
+    }
+
     // Buttons
 
-    public MobileDialog addButton(string text, UnityAction UnityAction, bool rebuild = true)
+    public MobileDialog addButton(string text, UnityAction UnityAction, string prefabName = null, bool rebuild = true)
     {
-        GameObject buttonContainer = Instantiate(buttonPrefab, buttonLayout.transform);        
+        if (prefabName == null) prefabName = buttonPrefabKey;
+        GameObject buttonContainer = Instantiate(_customPrefabs[prefabName], buttonLayout.transform);
         Button button = buttonContainer.GetComponentInChildren<Button>();
         buttonContainer.GetComponentInChildren<TMP_Text>().text = text;
         button.onClick.AddListener(UnityAction);
@@ -195,34 +221,40 @@ public class MobileDialog : Singleton<MobileDialog>
     public void setBackground(Sprite sprite, float alpha = 0.33f)
     {
         backgroundImage.sprite = sprite;
-    }    
+    }
 
     // Request
+    //TODO: Move of all of this into a seperate prefab thing that can be added to the dialog content
 
-    private IEnumerator progressRoutine()
-    {
-        downloading = true;
-        while (tryGetDownloadProgress() < 1.0f)
-        {
-            setProgress(tryGetDownloadProgress());
-            yield return null;
-        }
-        downloading = false;
-        dialogParent.SetActive(false);
-    }
-
-    private float tryGetDownloadProgress()
-    {
-        try { return webRequest.downloadProgress; }
-        catch (ArgumentException e) { return 1.0f; }
-    }
-
-    private void setProgress(float downloadProgress)
-    {
-        descriptionText.text = String.Format("{0}%", Math.Floor(downloadProgress * 100), 1);
-        //TODO: progress bar
-        //progressImage.rectTransform.sizeDelta = new Vector2((sizeDeltaTarget.x / 100) * downloadProgress, progressHeight);
-    }
+    //Loading graphics
+    //private float progressBarHeight;
+    //private Vector2 targetSizeDelta;
+    //void Start()
+    //{
+    //    //progressBarHeight = progressImage.rectTransform.sizeDelta.y;
+    //    //targetSizeDelta = progressImage.rectTransform.sizeDelta;
+    //    private IEnumerator progressRoutine()
+    //{
+    //    downloading = true;
+    //    while (tryGetDownloadProgress() < 1.0f)
+    //    {
+    //        setProgress(tryGetDownloadProgress());
+    //        yield return null;
+    //    }
+    //    downloading = false;
+    //    dialogParent.SetActive(false);
+    //}
+    //private float tryGetDownloadProgress()
+    //{
+    //    try { return webRequest.downloadProgress; }
+    //    catch (ArgumentException e) { return 1.0f; }
+    //}
+    //private void setProgress(float downloadProgress)
+    //{
+    //    descriptionText.text = String.Format("{0}%", Math.Floor(downloadProgress * 100), 1);
+    //    //TODO: progress bar
+    //    //progressImage.rectTransform.sizeDelta = new Vector2((sizeDeltaTarget.x / 100) * downloadProgress, progressHeight);
+    //}
 
     public void abortAndClose()
     {
@@ -233,7 +265,7 @@ public class MobileDialog : Singleton<MobileDialog>
             webRequest.Abort();
             downloading = webRequest.isDone;
         }
-        toggle();
+        toggle(false);
     }
 
     // Other

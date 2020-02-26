@@ -13,9 +13,25 @@ public class WorkoutPanel : MonoBehaviour
     public RectTransform contentTransform;
     public RectTransform workoutSetupContent;
 
+    //TODO Get the text components from the options gameobjects
+    [Header("Number Fields")]
     public TMP_Text setsText;
+    public TMP_Text repsText;
+    
+    [Header("Time Fields")]
     public Timetext workText;
     public Timetext restText;
+
+    //TODO make an options script / prefab?
+    [Header("Options")]
+    public GameObject setsOption;
+    public GameObject workOption;
+    public GameObject restOption;
+    public GameObject repsOption;
+
+    [Header("Buttons")]
+    public Button timeModeButton;
+    public Button repsModeButton;
 
     public GameObject totalTimeParent;  //Parent object
     public Timetext totalTimeText;      //Total round time
@@ -23,7 +39,12 @@ public class WorkoutPanel : MonoBehaviour
 
     //Used for inspector button functions
     //TODO: uppercase enum (change inspector calls)
-    public enum optionType { work, rest, sets };
+    public enum optionType {
+        work,   //Work time
+        rest,   //Rest time   
+        sets,   //Set amount
+        reps    //Reps amount
+    };
 
     public enum setupState
     {
@@ -31,8 +52,14 @@ public class WorkoutPanel : MonoBehaviour
         SelectExercises,    //Select exercises from list
         StartWorkout        //Navigate to workout panel and start
     }
-
     public setupState state;
+
+    public enum WorkoutMode
+    {
+        time,
+        reps
+    }
+    public WorkoutMode workoutMode;
 
     [Serializable]
     public class Workout {
@@ -89,6 +116,40 @@ public class WorkoutPanel : MonoBehaviour
         workText.setTimeText(newWorkout.globalWorkTime);
         restText.setTimeText(newWorkout.globalRestTime);
         setsText.text = newWorkout.globalSets.ToString();
+
+        setWorkoutMode(workoutMode);
+    }
+
+    /// <summary>
+    /// Function for use in inspector
+    /// </summary>
+    /// <param name="type"></param>
+    public void setWorkoutMode(string type)
+    {
+        WorkoutMode enumType = (WorkoutMode)Enum.Parse(typeof(WorkoutMode), type.ToLower());
+        setWorkoutMode(enumType);
+    }
+
+    private void setWorkoutMode(WorkoutMode mode)
+    {
+        workoutMode = mode;
+        switch(workoutMode)
+        {
+            case WorkoutMode.time:
+                timeModeButton.gameObject.SetActive(false);
+                repsModeButton.gameObject.SetActive(true);
+                workOption.gameObject.SetActive(true);
+                restOption.gameObject.SetActive(true);
+                repsOption.gameObject.SetActive(false);
+                break;
+            case WorkoutMode.reps:
+                timeModeButton.gameObject.SetActive(true);
+                repsModeButton.gameObject.SetActive(false);
+                workOption.gameObject.SetActive(false);
+                restOption.gameObject.SetActive(false);
+                repsOption.gameObject.SetActive(true);
+                break;
+        }
     }
 
     /// <summary>
@@ -150,7 +211,7 @@ public class WorkoutPanel : MonoBehaviour
     }
 
     public void plus(string type)
-    {        
+    {
         optionType enumType = (optionType) Enum.Parse(typeof(optionType), type.ToLower());
         switch (enumType)
         {
@@ -168,6 +229,7 @@ public class WorkoutPanel : MonoBehaviour
             case optionType.work: if ((newWorkout.globalWorkTime - workStep) >= workStep) workText.setTimeText(newWorkout.globalWorkTime -= workStep); break;
             case optionType.rest: if ((newWorkout.globalRestTime - restStep) >= restStep) restText.setTimeText(newWorkout.globalRestTime -= restStep); break;
             case optionType.sets: if ((newWorkout.globalSets - setStep) > 0 || (newWorkout.globalSets - setStep) == setStep) setsText.text = (newWorkout.globalSets -= setStep).ToString(); break;
+            case optionType.reps: if ((newWorkout.globalReps - repStep) > 0 || (newWorkout.globalReps - repStep) == repStep) repsText.text = (newWorkout.globalReps -= repStep).ToString(); break;
         }
     }
 
