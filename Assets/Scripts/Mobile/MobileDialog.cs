@@ -12,7 +12,8 @@ using TMPro;
 [RequireComponent(typeof(Button))]
 public class MobileDialog : Singleton<MobileDialog>
 {
-    public enum ButtonMode {
+    public enum ButtonMode
+    {
         AcceptDismiss,  //Show both buttons
         Accept,         //Show accept button
         Dismiss,        //Show dismiss button
@@ -36,11 +37,12 @@ public class MobileDialog : Singleton<MobileDialog>
 
     [Header("Objects")]
     public GameObject dialogParent;
+    public GameObject dialogObject;
     public string buttonPrefabKey = "button";
     public string descriptionPrefabKey = "description";
 
     [Header("Title")]
-    public TMP_Text titleText;    
+    public TMP_Text titleText;
 
     [Header("Background")]
     public Image backgroundImage;
@@ -58,12 +60,22 @@ public class MobileDialog : Singleton<MobileDialog>
 
     //Private
 
+    private Vector2 cachedDialogObjectAnchorMax;
+    private RectTransform dialogObjectRectTransform;
+
     private RectTransform buttonLayoutRectransform;
     private UnityWebRequest webRequest;
 
     void Start()
     {
+        dialogObjectRectTransform = dialogObject.GetComponent<RectTransform>();
+        cachedDialogObjectAnchorMax = dialogObjectRectTransform.anchorMax;
         buttonLayoutRectransform = buttonLayout.GetComponent<RectTransform>();
+        setCustomPrefabs();
+    }
+
+    private void setCustomPrefabs()
+    {
         _customPrefabs = new Dictionary<string, GameObject>();
         foreach (CustomPrefab customPrefab in customPrefabs)
         {
@@ -71,22 +83,75 @@ public class MobileDialog : Singleton<MobileDialog>
         }
     }
 
+    /// <summary>
+    /// Note that this will not work in-editor
+    /// It will always return DeviceOrientation.Unknown
+    /// </summary>
+    /// <returns></returns>
+    public void determineOrientation()
+    {
+        switch (Input.deviceOrientation)
+        {
+            case DeviceOrientation.Portrait: onPortrait(); break;
+            case DeviceOrientation.PortraitUpsideDown: onPortrait(); break;
+            case DeviceOrientation.LandscapeLeft: onLandscape(); break;
+            case DeviceOrientation.LandscapeRight: onLandscape(); break;
+        }
+
+        //FIXMME: This shit doesn't just work at all
+        //onLandscape();
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape)) abortAndClose();
+    }
+
+    // Landscape / Portrait settings
+
+    private void onPortrait()
+    {
+        dialogObjectRectTransform.anchorMax = cachedDialogObjectAnchorMax;
+    }
+
+    private void onLandscape()
+    {
+        //Fix yet another retarded null pointer that is impossible because these values are all set at fucking start
+        if(dialogObjectRectTransform == null) dialogObjectRectTransform = dialogObject.GetComponent<RectTransform>();
+
+        Vector2 halfAnchorMaxWidth = new Vector2(cachedDialogObjectAnchorMax.x / 2, cachedDialogObjectAnchorMax.y);
+        dialogObjectRectTransform.anchorMax = halfAnchorMaxWidth;
+        Debug.Log(halfAnchorMaxWidth);
     }
 
     //Show functions
 
     public MobileDialog show(string title = "", string description = "")
     {
-        //Reset background image
+        //Reset background
         setBackground(null, 0);
 
-        //Enable text elements
+        //Enable text
         titleText.text = title;
         setDescriptionContent(description);
         dialogParent.SetActive(true);
+        return this;
+    }
+
+    public MobileDialog show(ButtonMode buttonMode, string title = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
+    {
+        //Reset background
+        setBackground(null, 0);
+
+        //Set button mode
+        setButtonMode(buttonMode, positiveCallback, negativeCallback);
+
+        //Elements
+        clearContent();
+        titleText.text = title;
+        titleText.gameObject.SetActive(true);
+        dialogParent.SetActive(true);
+
         return this;
     }
 
@@ -98,7 +163,7 @@ public class MobileDialog : Singleton<MobileDialog>
         //Set button mode
         setButtonMode(buttonMode, positiveCallback, negativeCallback);
 
-        //Disable and enable elements
+        //Elements
         clearContent();
         titleText.text = title;
         titleText.gameObject.SetActive(true);
@@ -122,6 +187,13 @@ public class MobileDialog : Singleton<MobileDialog>
 
     //Clear functions
 
+    public MobileDialog clearAll()
+    {
+        clearButtons();
+        clearContent();
+        return this;
+    }
+
     public MobileDialog clearButtons()
     {
         foreach (Transform child in buttonLayout.transform)
@@ -131,14 +203,7 @@ public class MobileDialog : Singleton<MobileDialog>
         return this;
     }
 
-    public MobileDialog clearAll()
-    {
-        clearButtons();
-        clearContent();
-        return this;
-    }
-
-    private MobileDialog clearContent()
+    public MobileDialog clearContent()
     {
         foreach (Transform child in contentLayout.transform)
         {
@@ -157,9 +222,17 @@ public class MobileDialog : Singleton<MobileDialog>
         return this;
     }
 
-    public MobileDialog addContent(string prefabName = null, bool rebuild = true)
+    public MobileDialog addContent(GameObject gameObject, bool rebuild = true)
     {
-        GameObject buttonContainer = Instantiate(_customPrefabs[prefabName], contentLayout.transform);
+        gameObject.transform.SetParent(contentLayout.transform);
+        gameObject.transform.position = new Vector3(0, 0, 0);
+        if (rebuild) LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
+        return this;
+    }
+
+    private MobileDialog addContent(string prefabName = null, bool rebuild = true)
+    {
+        Instantiate(_customPrefabs[prefabName], contentLayout.transform);
         if (rebuild) LayoutRebuilder.ForceRebuildLayoutImmediate(buttonLayout.GetComponent<RectTransform>());
         return this;
     }
@@ -169,6 +242,10 @@ public class MobileDialog : Singleton<MobileDialog>
     public MobileDialog addButton(string text, UnityAction UnityAction, string prefabName = null, bool rebuild = true)
     {
         if (prefabName == null) prefabName = buttonPrefabKey;
+
+        //Fix impossible retarded null pointer
+        setCustomPrefabs();
+
         GameObject buttonContainer = Instantiate(_customPrefabs[prefabName], buttonLayout.transform);
         Button button = buttonContainer.GetComponentInChildren<Button>();
         buttonContainer.GetComponentInChildren<TMP_Text>().text = text;
@@ -256,6 +333,11 @@ public class MobileDialog : Singleton<MobileDialog>
     //    //progressImage.rectTransform.sizeDelta = new Vector2((sizeDeltaTarget.x / 100) * downloadProgress, progressHeight);
     //}
 
+    public void close()
+    {
+        toggle(false);
+    }
+
     public void abortAndClose()
     {
         bool abort = downloading && webRequest != null;
@@ -265,7 +347,7 @@ public class MobileDialog : Singleton<MobileDialog>
             webRequest.Abort();
             downloading = webRequest.isDone;
         }
-        toggle(false);
+        close();
     }
 
     // Other

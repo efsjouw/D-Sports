@@ -239,7 +239,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7124127028642378026}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a9eae758ffb49964da1ac34ebd04b62a, type: 3}
   m_Name: 
@@ -251,6 +251,7 @@ MonoBehaviour:
   - name: button
     prefab: {fileID: 1939454649318098, guid: 09e910cf8c9111347a49a2c0db6b940b, type: 3}
   dialogParent: {fileID: 7124127029515896352}
+  dialogObject: {fileID: 7124127029602011263}
   buttonPrefabKey: button
   descriptionPrefabKey: description
   titleText: {fileID: 7124127029336619506}
@@ -489,7 +490,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: TitleText
+  m_text: select rounds
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

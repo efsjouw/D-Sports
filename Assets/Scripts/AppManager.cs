@@ -12,8 +12,8 @@ public class AppManager : Singleton<AppManager>
     public UnityEvent onBackButtonPressed;
     public KeyCode backButton = KeyCode.Escape;
 
-    public Color androidNavBarColor;
-    public Color androidStatusBarColor;
+    //public Color androidNavBarColor;
+    //public Color androidStatusBarColor;
 
     private void Awake()
     {
@@ -26,7 +26,6 @@ public class AppManager : Singleton<AppManager>
     void Start()
     {
         //onBackButtonPressed
-
 #if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
         backButton = KeyCode.Escape;
 #endif
@@ -40,8 +39,30 @@ public class AppManager : Singleton<AppManager>
     public void backButtonPressed()
     {
         onBackButtonPressed.Invoke();
-        if (WorkoutProgress.Instance.isInProgress()) WorkoutProgress.Instance.cancel();
+        if (WorkoutProgress.Instance.isInProgress())
+        {
+            //TODO: Solve singleton abuse...
+            WorkoutProgress.Instance.pause();
+            MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Stop Workout", "Are you sure you want to stop the current workout?", () =>
+            {
+                WorkoutProgress.Instance.cancel();
+                MobileDialog.Instance.close();
+            },
+            () =>
+            {
+                WorkoutProgress.Instance.play();
+                MobileDialog.Instance.close();
+            });
+        }
+        else
+        {
+            PanelNavigator.Instance.goToPreviousInHistory();
+            //goBackInHistory();
+        }        
+    }
 
+    public void goBackInHistory()
+    {
         bool previousPanel = false;
         if (PanelNavigator.Instance.currentSubPanelNavigator != null)
         {
@@ -54,7 +75,7 @@ public class AppManager : Singleton<AppManager>
             {
                 //Is a subpanel assigned and can we go back in history
                 previousPanel = PanelNavigator.Instance.currentSubPanelNavigator.goToPreviousInHistory();
-            }                   
+            }
         }
         else
         {

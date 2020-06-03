@@ -110,13 +110,19 @@ public class ListController : MonoBehaviour
         StartCoroutine(setBoundaries(listItem));
     }
 
+    /// <summary>
+    /// Set the anchor min/max of this list's RectTransform to that of the assigned rectBoundaries
+    /// </summary>
+    /// <param name="listItem"></param>
+    /// <returns></returns>
     private IEnumerator setBoundaries(ListItem listItem)
     {
         yield return new WaitForEndOfFrame();
         if (listItem.rectBoundaries)
         {
-            Vector2 boundaries = new Vector2(listItem.rectBoundaries.sizeDelta.x, listItem.rectBoundaries.sizeDelta.y);
-            _instanceList[listItem.name].scrollRect.GetComponent<RectTransform>().sizeDelta = boundaries;
+            RectTransform rectTransform = _instanceList[listItem.name].scrollRect.GetComponent<RectTransform>();
+            rectTransform.anchorMin = listItem.rectBoundaries.anchorMin;
+            rectTransform.anchorMax = listItem.rectBoundaries.anchorMax;
         }
     }
 
@@ -128,7 +134,7 @@ public class ListController : MonoBehaviour
         }
         return null;
     }
-
+    
     private List<ListViewDataItem> loadExercises()
     {
         List<ListViewDataItem> data = new List<ListViewDataItem>();
@@ -139,7 +145,26 @@ public class ListController : MonoBehaviour
             data.Add(new ExerciseDataItem((string)jobject["name"]));
         }
         return data;
-    }    
+    }
+
+    /// <summary>
+    /// 
+    /// Returns ExerciseDataItem instead of ListViewDataItem
+    /// 
+    /// TODO: Move this to somekind of data controller?
+    /// </summary>
+    /// <returns></returns>
+    public List<ExerciseDataItem> loadExercisesData()
+    {
+        List<ExerciseDataItem> data = new List<ExerciseDataItem>();
+        string json = Resources.Load<TextAsset>("exercises").text;
+        JArray array = JArray.Parse(json);
+        foreach (JObject jobject in array)
+        {
+            data.Add(new ExerciseDataItem((string)jobject["name"]));
+        }
+        return data;
+    }
 
     private BetterListView createList(ListViewItem item, BetterListView prefab)
     {

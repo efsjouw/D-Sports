@@ -10,7 +10,7 @@ public class SubPanelNavigator : PanelNavigatorBase
 
     private void OnEnable()
     {
-        PanelNavigator.Instance.currentSubPanelNavigator = this;  
+        PanelNavigator.Instance.currentSubPanelNavigator = this;
     }
 
     private void OnDisable()

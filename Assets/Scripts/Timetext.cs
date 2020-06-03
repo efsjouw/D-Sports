@@ -10,7 +10,8 @@ using UnityEngine;
 [RequireComponent(typeof(TMP_Text))]
 public class Timetext : MonoBehaviour
 {
-    private TMP_Text tmp;
+    [HideInInspector]
+    public TMP_Text tmp;
 
     void Start()
     {

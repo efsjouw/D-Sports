@@ -105,6 +105,24 @@ public abstract class PanelNavigatorBase : MonoBehaviour
     /// </summary>
     public bool goToPreviousInHistory()
     {
+        bool navigated = false;
+        if (PanelNavigator.Instance.currentSubPanelNavigator != null) {
+            navigated = PanelNavigator.Instance.currentSubPanelNavigator.previousInHistory();
+            if(!navigated) {
+                navigated = PanelNavigator.Instance.previousInHistory();
+                if (!navigated) Application.Quit();
+            }
+        }
+        else {
+            //If not sub panel history then check top panels
+            navigated = PanelNavigator.Instance.previousInHistory();
+            if(!navigated) Application.Quit();
+        }
+        return navigated;
+    }
+
+    private bool previousInHistory()
+    {
         if (history.Count > 0 && history.Peek() > -1 && !isLocked)
         {
             int previousIndex = history.Pop();

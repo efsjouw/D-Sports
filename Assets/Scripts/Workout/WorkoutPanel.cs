@@ -13,6 +13,9 @@ public class WorkoutPanel : MonoBehaviour
     public RectTransform contentTransform;
     public RectTransform workoutSetupContent;
 
+    public IncrementOption optionPrefab;
+    private IncrementOption incrementOption;
+
     //TODO Get the text components from the options gameobjects
     [Header("Number Fields")]
     public TMP_Text setsText;
@@ -41,52 +44,80 @@ public class WorkoutPanel : MonoBehaviour
     //TODO: uppercase enum (change inspector calls)
     public enum optionType {
         work,   //Work time
-        rest,   //Rest time   
+        rest,   //Rest time
         sets,   //Set amount
         reps    //Reps amount
     };
 
     public enum setupState
     {
-        Configuration,      //Set workout time and reps
-        SelectExercises,    //Select exercises from list
-        StartWorkout        //Navigate to workout panel and start
+        Configuration,          //Set workout time and reps
+        SelectExerciseMode,     //Set exercise mode
+        SelectExercises,        //Select exercises from list
+        EvaluateExerciseMode,    //Decide what to do with selected mode
+        StartWorkout            //Navigate to workout panel and start
     }
-    public setupState state;
+    [HideInInspector]
+    public setupState workoutSetupState;
 
     public enum WorkoutMode
     {
         time,
         reps
     }
+    [HideInInspector]
     public WorkoutMode workoutMode;
+
+    public enum ExerciseMode
+    {
+        Random,     //Random exercise on each next exercise
+        Selection,  //Make a selection of exercises yourself
+        Rounds      //Only define a number of rounds per set
+    }
 
     [Serializable]
     public class Workout {
         public string name = "Workout"; //Workout name
+        public ExerciseMode exerciseMode;
+        public WorkoutMode workoutMode;
 
         //public List<ExerciseDataItem> exercises;
 
         public Dictionary<string, ExerciseDataItem> exercises; //Exercise data by exercise name
-        public int globalWorkTime;  //Optional global time in seconds for each exercise
-        public int globalRestTime;  //Optional global time in seconds for each exercise
-        public int globalReps;      //Optional global reps for each exercise
-        public int globalSets;      //Optional global reps for each exercise
+        public int globalWorkTime;  //Global time in seconds for each exercise
+        public int globalRestTime;  //Global time in seconds for each exercise
+        public int globalSets;      //Sets
 
-        public Workout()
+        public int globalReps;      //Optional global reps for each exercise
+        public int roundsPerSet;    //Optional rounds per set when no exercises specified
+
+        public Workout(WorkoutMode mode)
         {
             exercises = new Dictionary<string, ExerciseDataItem>();
+            this.workoutMode = mode;
+        }
+
+        public int getTotalWorkoutTimeInSeconds(int? exerciseCount = null)
+        {
+            //An intermediary value so you can base the returned value on some other number
+            int exerciseNumber = exerciseCount ?? exercises.Count;
+
+            //We can just add work and rest time together as each exercise will have rest with multiple sets
+            //But we need to substract one rest time as the last set will not have rest, it will finish
+            int subtractTime = 0;
+            if (exerciseNumber > 0) subtractTime = globalRestTime;
+            return ((globalWorkTime + globalRestTime) * exerciseNumber) - subtractTime;
         }
     }
-
-    //Step increments
+    
+    [Header("Step Increments")]
     public int workStep = 15;
     public int restStep = 15;
     public int repStep = 1;
     public int setStep = 1;
 
     public List<Workout> workouts;
-    private Workout newWorkout;     //Current configurable workout
+    [HideInInspector] public Workout newWorkout;     //Current configurable workout
 
     private Color pressedButtonColor;
     private Color originalButtonColor;
@@ -105,7 +136,7 @@ public class WorkoutPanel : MonoBehaviour
         totalTimeParent.gameObject.SetActive(false);
         listController.hideList("exercises");
 
-        state = setupState.Configuration;
+        workoutSetupState = setupState.Configuration;
 
         newWorkout = createNewWorkout();
         //TODO: Enable in the future?
@@ -127,13 +158,14 @@ public class WorkoutPanel : MonoBehaviour
     public void setWorkoutMode(string type)
     {
         WorkoutMode enumType = (WorkoutMode)Enum.Parse(typeof(WorkoutMode), type.ToLower());
-        setWorkoutMode(enumType);
+        setWorkoutMode(enumType);        
     }
 
     private void setWorkoutMode(WorkoutMode mode)
     {
         workoutMode = mode;
-        switch(workoutMode)
+        newWorkout.workoutMode = workoutMode;
+        switch (workoutMode)
         {
             case WorkoutMode.time:
                 timeModeButton.gameObject.SetActive(false);
@@ -158,7 +190,7 @@ public class WorkoutPanel : MonoBehaviour
     /// <returns></returns>
     private Workout createNewWorkout()
     {
-        Workout workout = new Workout();
+        Workout workout = new Workout(workoutMode);
         workout.globalWorkTime = workStep;
         workout.globalRestTime = restStep;
         workout.globalReps = repStep;
@@ -169,30 +201,69 @@ public class WorkoutPanel : MonoBehaviour
     public void nextSetupOption()
     {
         //Switch to new state based on previous state
-        switch(state)
+        switch(workoutSetupState)
         {
-            case setupState.Configuration: state = setupState.SelectExercises; break;
-            case setupState.SelectExercises: state = setupState.StartWorkout; break;
-        }
+            case setupState.Configuration: workoutSetupState        = setupState.SelectExerciseMode; break;
+            case setupState.SelectExerciseMode: workoutSetupState   = setupState.EvaluateExerciseMode; break;
+            case setupState.SelectExercises: workoutSetupState      = setupState.StartWorkout; break;
+        }   
 
         //Do new state function
-        switch(state)
+        switch(workoutSetupState)
         {
-            case setupState.Configuration: createNewWorkout(); break;
-            case setupState.SelectExercises: selectExercises(); break;
+            case setupState.Configuration:          createNewWorkout(); break;
+            case setupState.SelectExerciseMode:     selectExerciseMode(); break;
+            case setupState.EvaluateExerciseMode:
+
+                switch(newWorkout.exerciseMode)
+                {
+                    case ExerciseMode.Random:       showSelectRoundsDialog(); break;
+                    case ExerciseMode.Rounds:       showSelectRoundsDialog(); break;
+                    case ExerciseMode.Selection:    selectExercises(); break;
+                }
+
+                break;
+
             case setupState.StartWorkout:
                 if (newWorkout.exercises.Count >= 1) startWorkout();
                 else
                 {
-                    //MobilePopup.Instance.toast.show("Selecteer minstens 1 oefening");
-                    MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Select rounds", "No exercises selected, set a number of rounds");
+                    MobilePopup.Instance.toast.show("Selecteer minstens 1 oefening");
                 }
                 break;
         }
     }
 
+    private void showSelectRoundsDialog()
+    {
+        GameObject instiatedobject = Instantiate(optionPrefab.gameObject);
+        MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "select rounds", () =>
+        {
+            startWorkout();
+        })
+        .clearContent()
+        .addContent(instiatedobject);
+
+        IncrementOption IncrementOption = instiatedobject.GetComponent<IncrementOption>();
+        IncrementOption.onValueChanged.AddListener(onIncrementChanged);
+        IncrementOption.init("rounds per set", 2);
+    }
+
+    private void onIncrementChanged(int value)
+    {
+        newWorkout.roundsPerSet = value;
+    }
+
+    private void selectExerciseMode()
+    {
+        PanelNavigator.Instance.currentSubPanelNavigator.goToPanel("ExerciseMode");
+    }
+
     private void selectExercises()
     {
+        workoutSetupState = setupState.SelectExercises;
+        PanelNavigator.Instance.currentSubPanelNavigator.goToPanel("WorkoutExercises");
+
         totalSetText.text = "x" + newWorkout.globalSets;
         totalTimeParent.gameObject.SetActive(true);
         totalTimeText.setTimeText(0);
@@ -205,6 +276,9 @@ public class WorkoutPanel : MonoBehaviour
 
     private void startWorkout()
     {
+        //TODO: make dialog close itself?
+        MobileDialog.Instance.close();
+
         listController.hideList("exercises");
         subPanelNavigator.goToPanel("WorkoutProgress");
         WorkoutProgress.Instance.startWorkout(newWorkout);
@@ -215,21 +289,34 @@ public class WorkoutPanel : MonoBehaviour
         optionType enumType = (optionType) Enum.Parse(typeof(optionType), type.ToLower());
         switch (enumType)
         {
-            case optionType.work : workText.setTimeText(newWorkout.globalWorkTime += workStep); break;
+            case optionType.work: workText.setTimeText(newWorkout.globalWorkTime += workStep); break;
             case optionType.rest: restText.setTimeText(newWorkout.globalRestTime += restStep); break;
             case optionType.sets: setsText.text = (newWorkout.globalSets += setStep).ToString(); break;
+            case optionType.reps: repsText.text = (newWorkout.globalReps += repStep).ToString(); break;
         }
     }
 
     public void min(string type)
-    {        
+    {
         optionType enumType = (optionType)Enum.Parse(typeof(optionType), type.ToLower());
         switch (enumType)
         {
-            case optionType.work: if ((newWorkout.globalWorkTime - workStep) >= workStep) workText.setTimeText(newWorkout.globalWorkTime -= workStep); break;
-            case optionType.rest: if ((newWorkout.globalRestTime - restStep) >= restStep) restText.setTimeText(newWorkout.globalRestTime -= restStep); break;
-            case optionType.sets: if ((newWorkout.globalSets - setStep) > 0 || (newWorkout.globalSets - setStep) == setStep) setsText.text = (newWorkout.globalSets -= setStep).ToString(); break;
-            case optionType.reps: if ((newWorkout.globalReps - repStep) > 0 || (newWorkout.globalReps - repStep) == repStep) repsText.text = (newWorkout.globalReps -= repStep).ToString(); break;
+            case optionType.work:
+                if ((newWorkout.globalWorkTime - workStep) >= workStep)
+                    workText.setTimeText(newWorkout.globalWorkTime -= workStep);
+                break;
+            case optionType.rest:
+                if ((newWorkout.globalRestTime - restStep) >= restStep)
+                    restText.setTimeText(newWorkout.globalRestTime -= restStep);
+                break;
+            case optionType.sets:
+                if ((newWorkout.globalSets - setStep) > 0 || (newWorkout.globalSets - setStep) == setStep)
+                    setsText.text = (newWorkout.globalSets -= setStep).ToString();
+                break;
+            case optionType.reps:
+                if ((newWorkout.globalReps - repStep) > 0 || (newWorkout.globalReps - repStep) == repStep)
+                    repsText.text = (newWorkout.globalReps -= repStep).ToString();
+                break;
         }
     }
 
@@ -244,8 +331,8 @@ public class WorkoutPanel : MonoBehaviour
         {
             originalButtonColor = buttonImage.color;
             pressedButtonColor = new Color(
-                originalButtonColor.r / 2, 
-                originalButtonColor.g / 2, 
+                originalButtonColor.r / 2,
+                originalButtonColor.g / 2,
                 originalButtonColor.b / 2, 
                 originalButtonColor.a);
             originalButtonColorSet = true;
@@ -263,12 +350,8 @@ public class WorkoutPanel : MonoBehaviour
             newWorkout.exercises[exerciseItem.data.name] = exerciseItem.data;
             buttonImage.color = pressedButtonColor;
         }
-
-        //We can just add work and rest time together as each exercise will have rest with multiple sets
-        //But we need to substract one rest time as the last set will not have rest, it will finish
-        int subtractTime = 0;
-        if (newWorkout.exercises.Count > 0) subtractTime = newWorkout.globalRestTime;
-        totalTimeText.setTimeText(((newWorkout.globalWorkTime + newWorkout.globalRestTime) * newWorkout.exercises.Count) - subtractTime);
+        
+        totalTimeText.setTimeText(newWorkout.getTotalWorkoutTimeInSeconds());
         //MobilePopup.Instance.toast.show(message);
     }
     
