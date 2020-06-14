@@ -10,18 +10,19 @@ public class WorkoutProgressBar : MonoBehaviour
 
     private float progressPercentage;
     private Image fillImage;
-    private void Awake()
+    void Awake()
     {
         fillImage = slider.fillRect.GetComponent<Image>();
     }
 
-    private void Update()
-    {
+    void Update()
+    {        
         slider.value = Mathf.Lerp(slider.value, progressPercentage, lerpTime * Time.deltaTime);
     }
 
-    public void setProgress(float percentage)
+    public void setProgress(float percentage, bool showFilling = true)
     {
+        showFill(showFilling);
         progressPercentage = percentage;
     }
 
@@ -30,7 +31,7 @@ public class WorkoutProgressBar : MonoBehaviour
         return progressPercentage;
     }
     
-    public void showFill(bool toggle)
+    private void showFill(bool toggle)
     {
         Color fillColor = fillImage.color;
         fillImage.color = new Color(fillColor.r, fillColor.g, fillColor.b, toggle ? 100 : 0);

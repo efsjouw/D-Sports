@@ -154,14 +154,15 @@ public class ListController : MonoBehaviour
     /// TODO: Move this to somekind of data controller?
     /// </summary>
     /// <returns></returns>
-    public List<ExerciseDataItem> loadExercisesData()
+    public List<KeyValuePair<string, ExerciseDataItem>> loadExercisesData()
     {
-        List<ExerciseDataItem> data = new List<ExerciseDataItem>();
+        List<KeyValuePair<string, ExerciseDataItem>> data = new List<KeyValuePair<string, ExerciseDataItem>>();
         string json = Resources.Load<TextAsset>("exercises").text;
         JArray array = JArray.Parse(json);
         foreach (JObject jobject in array)
         {
-            data.Add(new ExerciseDataItem((string)jobject["name"]));
+            string exerciseName = (string)jobject["name"];
+            data.Add(new KeyValuePair<string, ExerciseDataItem>(exerciseName, new ExerciseDataItem(exerciseName)));
         }
         return data;
     }

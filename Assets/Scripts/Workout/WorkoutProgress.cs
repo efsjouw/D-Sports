@@ -82,7 +82,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     private int exerciseCount;  //Reset to 0 each set
     private ExerciseDataItem currentExercise;
     private List<KeyValuePair<string, ExerciseDataItem>> _exerciseList;
-    private List<ExerciseDataItem> _randomExerciseList;
+    //private List<ExerciseDataItem> _randomExerciseList;
 
     private string getReadyString = "Get Ready";
     private bool landscapeWasEnabled;
@@ -225,62 +225,59 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     }
 
     private void startWorkout()
-    {        
-        _exerciseList = currentWorkout.exercises.ToList();
+    {
+        if (currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Random)
+        {
+            _exerciseList = new List<KeyValuePair<string, ExerciseDataItem>>();
+            _exerciseList = listController.loadExercisesData();
+        }
+        else
+        {
+            _exerciseList = currentWorkout.exercises.ToList();
+        }
 
         switch (currentWorkout.workoutMode)
         {
             case WorkoutPanel.WorkoutMode.time: StartCoroutine(workoutRoutine()); break;
-            case WorkoutPanel.WorkoutMode.reps: initRepsMode(); break;
+            case WorkoutPanel.WorkoutMode.reps: nextExercise(); break;
         }
-    }
-
-    public void initRepsMode()
-    {
-        if (currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Random && _randomExerciseList == null)
-        {
-            _randomExerciseList = new List<ExerciseDataItem>();
-            _randomExerciseList = listController.loadExercisesData();
-        }
-
-        nextButton.gameObject.SetActive(true);
-
-        nextExercise();
     }
 
     public void nextExercise()
     {
         setState(State.InProgress);
 
-        if (currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection)
+        switch (currentWorkout.exerciseMode)
         {
-            if (exerciseCount == _exerciseList.Count()) currentSet++;
-            if (currentSet == currentWorkout.globalSets) setState(State.Finished);
-
-            int nextIndex = exerciseCount == 1 ? 0 : exerciseCount;
-
-            setCurrentExercise(_exerciseList[nextIndex].Value, currentWorkout.globalReps);
-            exerciseCount++;
-
-            //If in time mode skip exercise
-            //if(currentWorkout.mode == WorkoutPanel.WorkoutMode.time) skip = true;
+            case WorkoutPanel.ExerciseMode.Selection: if (exerciseCount == _exerciseList.Count()) currentSet++; break;
+            case WorkoutPanel.ExerciseMode.Random: if (exerciseCount == currentWorkout.roundsPerSet) currentSet++; break;
+            case WorkoutPanel.ExerciseMode.Rounds: if (exerciseCount == currentWorkout.roundsPerSet) currentSet++; break;
         }
+
+        if (currentSet == currentWorkout.globalSets) setState(State.Finished);
         else
         {
             //If in random/rounds mode there are no exercise data items
             //Set exercise based on workout exercise mode
             switch (currentWorkout.exerciseMode)
             {
+                case WorkoutPanel.ExerciseMode.Selection:
+                    int nextIndex = exerciseCount == 1 ? 0 : exerciseCount;
+                    setCurrentExercise(_exerciseList[nextIndex].Value, currentWorkout.globalReps);
+                    break;
                 case WorkoutPanel.ExerciseMode.Random: setCurrentExercise(getRandomExercise(), currentWorkout.globalReps); break;
-                case WorkoutPanel.ExerciseMode.Rounds: setCurrentExercise("Work", currentWorkout.globalReps); break;                
+                case WorkoutPanel.ExerciseMode.Rounds: setCurrentExercise("Work", currentWorkout.globalReps); break;
             }
-        }
+
+            exerciseCount++;
+
+            int sets = currentWorkout.globalSets == 0 ? 1 : currentWorkout.globalSets;
+            progressBar.setProgress(((float)exerciseCount / (currentWorkout.roundsPerSet * sets)));
+        }           
     }
 
     private IEnumerator workoutRoutine()
     {
-        progressBar.showFill(true);        
-
         //If no exercises selected get rounds per set value
         bool noExercisesSelected = currentWorkout.roundsPerSet > 0 && currentWorkout.exercises.Count == 0;
         int exerciseTotal = noExercisesSelected ? currentWorkout.roundsPerSet :  currentWorkout.exercises.Count;
@@ -365,8 +362,9 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     }
 
     private ExerciseDataItem getRandomExercise()
-    {
-        return _randomExerciseList[Random.Range(0, _randomExerciseList.Count())];
+    {        
+        return _exerciseList[Random.Range(0, _exerciseList.Count())].Value;
+
     }
 
     private bool isExerciseRest(int exerciseTotal)
@@ -449,6 +447,8 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     private void setGetReady()
     {
         paused = false;
+        pausedOverlay.SetActive(paused);
+
         cancelled = false;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
@@ -459,10 +459,8 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         nextButton.interactable = false;
         infoButton.button.interactable = false;
         nextBackground.color = new Color(0, 0, 0, 0);
-
-        play();
-        progressBar.showFill(false);
-        progressBar.setProgress(0);
+        
+        progressBar.setProgress(0, false);
 
         setText.text = "";
         exerciseText.text = getReadyString.ToUpper();
@@ -473,15 +471,21 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
     private void setInProgressState()
     {
+        paused = false;
+        pausedOverlay.SetActive(paused);
+
+        cancelled = false;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
         togglePausePlayButton();
 
         bool workoutRepsMode = currentWorkout.workoutMode == WorkoutPanel.WorkoutMode.reps;
         nextButton.gameObject.SetActive(workoutRepsMode);
         nextButton.interactable = workoutRepsMode;
 
-        bool exerciseModeRandom = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Random;
-        pauseButton.gameObject.SetActive(!exerciseModeRandom);
-        pauseButton.interactable = !exerciseModeRandom;
+        bool workoutModeTimed = currentWorkout.workoutMode == WorkoutPanel.WorkoutMode.time;
+        pauseButton.gameObject.SetActive(workoutModeTimed);
+        pauseButton.interactable = workoutModeTimed;
 
         bool exerciseModeRounds = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Rounds;
         infoButton.gameObject.SetActive(!exerciseModeRounds);
