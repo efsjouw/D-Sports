@@ -1,43 +1,31 @@
 
-
-
- d-sports test app
- 
+d-sports test app
 
 --------TIMED
 
 RANDOM 
 
-[x] pause button is not visible
-- next exercise doesn't show correctly
+[x] next exercise doesn't show correctly
 
 SELECTION
 
-- OK
+OK
 
 ROUNDS
 
-[x] Pause button enabled on get ready but does nothing
+OK
 
 --------REPS
 
 RANDOM
 
-[x] next button enabled on get ready
-[x] info button enabled on get ready
-[x] bar does not show progres on next
-[x] is endless even with 2 rounds
+OK
 
 SELECTION
 
-- next does nothing on first press
-- bar does not show progress correctly
-
-[x] next button enabled on get ready
-[x] does go into some completion state by enabling the restart button but does not go into the blue finish screen
-
+[x] next does nothing on first press
+[x] bar does not show progress correctly
 
 ROUNDS
 
-[x] bar does not show progres on next
-[x] next button doesn't respond
+OK

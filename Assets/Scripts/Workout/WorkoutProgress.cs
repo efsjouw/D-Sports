@@ -261,18 +261,17 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
             //Set exercise based on workout exercise mode
             switch (currentWorkout.exerciseMode)
             {
-                case WorkoutPanel.ExerciseMode.Selection:
-                    int nextIndex = exerciseCount == 1 ? 0 : exerciseCount;
-                    setCurrentExercise(_exerciseList[nextIndex].Value, currentWorkout.globalReps);
-                    break;
+                case WorkoutPanel.ExerciseMode.Selection: setCurrentExercise(_exerciseList[exerciseCount].Value, currentWorkout.globalReps); break;
                 case WorkoutPanel.ExerciseMode.Random: setCurrentExercise(getRandomExercise(), currentWorkout.globalReps); break;
                 case WorkoutPanel.ExerciseMode.Rounds: setCurrentExercise("Work", currentWorkout.globalReps); break;
             }
 
             exerciseCount++;
 
+            //If in Selection mode use exerciseCount for progress calculation, otherwise always use roundsPerSet
             int sets = currentWorkout.globalSets == 0 ? 1 : currentWorkout.globalSets;
-            progressBar.setProgress(((float)exerciseCount / (currentWorkout.roundsPerSet * sets)));
+            int total = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection ? exerciseCount * sets : currentWorkout.roundsPerSet * sets;
+            progressBar.setProgress(((float)exerciseCount / total));
         }           
     }
 
@@ -303,6 +302,18 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
                     int restSeconds = currentWorkout.globalRestTime;
                     setRest(restSeconds);
 
+                    //Show next exercise for modes Selection and Random
+                    if (currentWorkout.exerciseMode != WorkoutPanel.ExerciseMode.Rounds)
+                    {
+                        //Be sure to set theNextExercise before calling showNextExercise
+                        switch (currentWorkout.exerciseMode)
+                        {
+                            case WorkoutPanel.ExerciseMode.Random: currentExercise = getRandomExercise(); break;
+                            case WorkoutPanel.ExerciseMode.Selection: currentExercise = exerciseData; break;
+                        }
+                        showNextExercise();
+                    }
+
                     while (restSeconds > 0)
                     {
                         if (!pauseButton.interactable) pauseButton.interactable = true;
@@ -327,9 +338,10 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
                 //Set exercise based on workout exercise mode
                 switch(currentWorkout.exerciseMode)
                 {
-                    case WorkoutPanel.ExerciseMode.Random:      setCurrentExercise(getRandomExercise(), workoutSeconds); break;
+                    //Use currentExercise after rest otherwise use exerciseData for the first time
+                    case WorkoutPanel.ExerciseMode.Random:      setCurrentExercise(currentExercise ?? getRandomExercise(), workoutSeconds); break;
                     case WorkoutPanel.ExerciseMode.Rounds:      setCurrentExercise("Work", workoutSeconds); break;
-                    case WorkoutPanel.ExerciseMode.Selection:   setCurrentExercise(exerciseData, workoutSeconds); break;
+                    case WorkoutPanel.ExerciseMode.Selection:   setCurrentExercise(currentExercise ?? exerciseData, workoutSeconds); break;
                 }
 
                 roundBeep.Play();
@@ -377,19 +389,14 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     private void setRest(int time, string text = "Rest")
     {
         exerciseText.text = text.ToUpper();
-
-        //Show next exercise for modes Selection and Random
-        if (currentWorkout.exerciseMode != WorkoutPanel.ExerciseMode.Rounds)
-            showNextExercise(_exerciseList[exerciseCount].Value);
-
         backgroundColor = restColor;
         setTimeText(time);
     }
 
-    private void showNextExercise(ExerciseDataItem exerciseData)
+    private void showNextExercise()
     {
         nextBackground.color = new Color(0, 0, 0, 125);
-        nextExerciseText.text = exerciseData.name.ToUpper();
+        nextExerciseText.text = currentExercise.name.ToUpper();
     }
 
     private void setCurrentExercise(string name, int time)
