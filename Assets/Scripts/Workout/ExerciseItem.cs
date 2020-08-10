@@ -1,4 +1,7 @@
-﻿using TMPro;
+﻿using DG.Tweening;
+using System.Collections;
+using TMPro;
+using UnityEngine;
 
 public class ExerciseItem : ListViewItem
 {
@@ -16,5 +19,10 @@ public class ExerciseItem : ListViewItem
         string imagesParameter = "&iax=images&ia=images";
 
         linkButton.appendToURL(searchQuery + imagesParameter);
+    }
+
+    public override void doStartAnimation()
+    {
+        //transform.DOShakeScale(0.2f, 0.1f);
     }
 }

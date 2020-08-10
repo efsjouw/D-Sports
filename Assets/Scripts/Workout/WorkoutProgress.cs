@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using DG.Tweening;
+using Newtonsoft.Json.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     public Color workColor;
     public Color restColor;
     public Color finishedColor;
+    public Color nextBackgroundColor;
 
     [Header("Audio")]
     public AudioSource secondBeep; //Beep sound for each countdown second
@@ -215,6 +217,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         {
             secondBeep.Play();
             timerText.setTimeText(seconds);
+            playTimeTextAnimation();
             yield return new WaitForSecondsRealtime(1.0f);
             seconds--;
         }
@@ -281,12 +284,13 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         bool noExercisesSelected = currentWorkout.roundsPerSet > 0 && currentWorkout.exercises.Count == 0;
         int exerciseTotal = noExercisesSelected ? currentWorkout.roundsPerSet :  currentWorkout.exercises.Count;
 
-        totalWorkoutTime = currentWorkout.getTotalWorkoutTimeInSeconds(exerciseTotal);        
+        totalWorkoutTime = currentWorkout.getTotalWorkoutTimeInSeconds(exerciseTotal);
 
         for (currentSet = 0; currentSet < currentWorkout.globalSets; currentSet++)
         {
             pauseButton.interactable = false;
             setText.text = (currentSet + 1).ToString() + " / " + currentWorkout.globalSets;
+            if(currentSet > 1) playSetTextAnimation();
 
             workouteTimePassed = 0;
             bool isSetRest = currentSet > 0; //Reset between sets if we passed set 0
@@ -317,19 +321,28 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
                     while (restSeconds > 0)
                     {
                         if (!pauseButton.interactable) pauseButton.interactable = true;
-                        if (restSeconds <= 3) secondBeep.Play();
+                        if (restSeconds <= 3)
+                        {
+                            playTimeTextAnimation();
+                            secondBeep.Play();
+                        }
 
                         timerText.setTimeText(restSeconds);
-                        yield return new WaitForSecondsRealtime(1.0f);
+                        float second = 0;
+                        while(second < 1)
+                        {
+                            yield return new WaitForSecondsRealtime(0.1f);
+                            second += 0.1f;
+                            if (paused)
+                            {
+                                setState(State.Paused);
+                                yield return new WaitUntil(() => !paused);
+                            }
+                        }
+                        
                         workouteTimePassed++;
                         restSeconds--;
-                        progressBar.setProgress(workouteTimePassed / totalWorkoutTime);
-
-                        if (paused)
-                        {
-                            setState(State.Paused);
-                            yield return new WaitUntil(() => !paused);
-                        }
+                        progressBar.setProgress(workouteTimePassed / totalWorkoutTime);                        
                     }
                 }
 
@@ -350,27 +363,52 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
                 while (workoutSeconds > 0)
                 {
                     if (!pauseButton.interactable) pauseButton.interactable = true;
-                    if (workoutSeconds <= 3) secondBeep.Play();
+                    if (workoutSeconds <= 3)
+                    {
+                        playTimeTextAnimation();
+                        secondBeep.Play();
+                    }
 
                     timerText.setTimeText(workoutSeconds);
-                    yield return new WaitForSecondsRealtime(1.0f);
+                    float second = 0;
+                    while(second < 1)
+                    {                        
+                        yield return new WaitForSecondsRealtime(0.1f);
+                        second += 0.1f;
+                        if (paused)
+                        {
+                            setState(State.Paused);
+                            yield return new WaitUntil(() => !paused);
+                        }
+                    }
+
                     workouteTimePassed++;
                     workoutSeconds--;
-                    progressBar.setProgress(workouteTimePassed / totalWorkoutTime);
-
-                    if (paused)
-                    {
-                        setState(State.Paused);
-                        yield return new WaitUntil(() => !paused);
-                    }
+                    progressBar.setProgress(workouteTimePassed / totalWorkoutTime);                    
                 }
 
+                playTimeTextAnimation();
                 roundBeep.Play();
                 yield return new WaitForSecondsRealtime(roundBeep.clip.length);
             }
         }
 
         setState(State.Finished);
+    }
+
+    private void playExerciseTextAnimation()
+    {
+        exerciseText.transform.DOPunchScale(new Vector2(0.2f, 0.2f), 0.5f);
+    }
+
+    private void playTimeTextAnimation()
+    {
+        timerText.transform.DOPunchScale(new Vector2(0.15f, 0.15f), 0.5f);
+    }
+
+    private void playSetTextAnimation()
+    {
+        setText.transform.DOPunchScale(new Vector2(0.2f, 0.2f), 0.5f);
     }
 
     private ExerciseDataItem getRandomExercise()
@@ -389,13 +427,15 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     private void setRest(int time, string text = "Rest")
     {
         exerciseText.text = text.ToUpper();
+        playExerciseTextAnimation();
+
         backgroundColor = restColor;
         setTimeText(time);
     }
 
     private void showNextExercise()
     {
-        nextBackground.color = new Color(0, 0, 0, 125);
+        nextBackground.color = nextBackgroundColor;
         nextExerciseText.text = currentExercise.name.ToUpper();
     }
 
@@ -404,6 +444,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         setState(State.InProgress);
         currentExercise = null;
         exerciseText.text = name.ToUpper();
+        playExerciseTextAnimation();
         setTimeText(time);
     }
 
@@ -412,6 +453,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         setState(State.InProgress);
         currentExercise = exercise;
         exerciseText.text = currentExercise.name.ToUpper();
+        playExerciseTextAnimation();
         setTimeText(timeOrReps);
     }
 
@@ -470,8 +512,10 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         progressBar.setProgress(0, false);
 
         setText.text = "";
-        exerciseText.text = getReadyString.ToUpper();
         timerText.setText("");
+
+        exerciseText.text = getReadyString.ToUpper();
+        playExerciseTextAnimation();        
 
         backgroundColor = readyColor;
     }

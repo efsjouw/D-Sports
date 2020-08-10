@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DG.Tweening;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -13,8 +14,12 @@ public class WorkoutPanel : MonoBehaviour
     public RectTransform contentTransform;
     public RectTransform workoutSetupContent;
 
+    public HorizontalOrVerticalLayoutGroup optionsLayout;
+
     public IncrementOption optionPrefab;
     private IncrementOption incrementOption;
+
+    public TMP_Text versionText;
 
     //TODO Get the text components from the options gameobjects
     [Header("Number Fields")]
@@ -123,6 +128,11 @@ public class WorkoutPanel : MonoBehaviour
     private Color originalButtonColor;
     private bool originalButtonColorSet;
 
+    private void Start()
+    {
+        versionText.text = "v" + Application.version;
+    }
+
     private void OnEnable()
     {
         createWorkout();
@@ -147,8 +157,24 @@ public class WorkoutPanel : MonoBehaviour
         workText.setTimeText(newWorkout.globalWorkTime);
         restText.setTimeText(newWorkout.globalRestTime);
         setsText.text = newWorkout.globalSets.ToString();
+        repsText.text = newWorkout.globalReps.ToString();
 
         setWorkoutMode(workoutMode);
+    }
+
+    public void resetWorkout()
+    {
+        MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Reset Workout", "Are you sure you want to reset the workout values?", () =>
+        {
+            MobileDialog.Instance.abortAndClose();
+            createWorkout();
+
+            doValueAnimation(workText.transform);
+            doValueAnimation(restText.transform);
+            doValueAnimation(setsText.transform);
+            doValueAnimation(repsText.transform);
+
+        });
     }
 
     /// <summary>
@@ -165,9 +191,12 @@ public class WorkoutPanel : MonoBehaviour
     {
         workoutMode = mode;
         newWorkout.workoutMode = workoutMode;
+
+        optionsLayout.transform.localScale = new Vector2(1, 0);
+
         switch (workoutMode)
         {
-            case WorkoutMode.time:
+            case WorkoutMode.time:                
                 timeModeButton.gameObject.SetActive(false);
                 repsModeButton.gameObject.SetActive(true);
                 workOption.gameObject.SetActive(true);
@@ -182,6 +211,8 @@ public class WorkoutPanel : MonoBehaviour
                 repsOption.gameObject.SetActive(true);
                 break;
         }
+
+        optionsLayout.transform.DOScaleY(1, 0.25f);
     }
 
     /// <summary>
@@ -228,7 +259,7 @@ public class WorkoutPanel : MonoBehaviour
                 if (newWorkout.exercises.Count >= 1) startWorkout();
                 else
                 {
-                    MobilePopup.Instance.toast.show("Selecteer minstens 1 oefening");
+                    MobilePopup.Instance.toast.show("Select at least 1 exercise");
                 }
                 break;
         }
@@ -237,7 +268,7 @@ public class WorkoutPanel : MonoBehaviour
     private void showSelectRoundsDialog()
     {
         GameObject instiatedobject = Instantiate(optionPrefab.gameObject);
-        MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "select rounds", () =>
+        MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Select Rounds", () =>
         {
             startWorkout();
         })
@@ -289,10 +320,22 @@ public class WorkoutPanel : MonoBehaviour
         optionType enumType = (optionType) Enum.Parse(typeof(optionType), type.ToLower());
         switch (enumType)
         {
-            case optionType.work: workText.setTimeText(newWorkout.globalWorkTime += workStep); break;
-            case optionType.rest: restText.setTimeText(newWorkout.globalRestTime += restStep); break;
-            case optionType.sets: setsText.text = (newWorkout.globalSets += setStep).ToString(); break;
-            case optionType.reps: repsText.text = (newWorkout.globalReps += repStep).ToString(); break;
+            case optionType.work:                
+                workText.setTimeText(newWorkout.globalWorkTime += workStep);
+                doValueAnimation(workText.transform);
+                break;
+            case optionType.rest: 
+                restText.setTimeText(newWorkout.globalRestTime += restStep);
+                doValueAnimation(restText.transform);
+                break;
+            case optionType.sets: 
+                setsText.text = (newWorkout.globalSets += setStep).ToString();
+                doValueAnimation(setsText.transform);
+                break;
+            case optionType.reps: 
+                repsText.text = (newWorkout.globalReps += repStep).ToString();
+                doValueAnimation(repsText.transform);
+                break;
         }
     }
 
@@ -303,19 +346,31 @@ public class WorkoutPanel : MonoBehaviour
         {
             case optionType.work:
                 if ((newWorkout.globalWorkTime - workStep) >= workStep)
+                {
                     workText.setTimeText(newWorkout.globalWorkTime -= workStep);
+                    doValueAnimation(workText.transform);
+                }
                 break;
             case optionType.rest:
                 if ((newWorkout.globalRestTime - restStep) >= restStep)
+                {
                     restText.setTimeText(newWorkout.globalRestTime -= restStep);
+                    doValueAnimation(restText.transform);
+                }
                 break;
             case optionType.sets:
                 if ((newWorkout.globalSets - setStep) > 0 || (newWorkout.globalSets - setStep) == setStep)
+                {
                     setsText.text = (newWorkout.globalSets -= setStep).ToString();
+                    doValueAnimation(setsText.transform);
+                }
                 break;
             case optionType.reps:
                 if ((newWorkout.globalReps - repStep) > 0 || (newWorkout.globalReps - repStep) == repStep)
+                {
                     repsText.text = (newWorkout.globalReps -= repStep).ToString();
+                    doValueAnimation(repsText.transform);
+                }
                 break;
         }
     }
@@ -352,7 +407,13 @@ public class WorkoutPanel : MonoBehaviour
         }
         
         totalTimeText.setTimeText(newWorkout.getTotalWorkoutTimeInSeconds());
+        doValueAnimation(totalTimeText.transform);
         //MobilePopup.Instance.toast.show(message);
+    }
+
+    private void doValueAnimation(Transform transform)
+    {
+        transform.DOPunchScale(new Vector2(0.25f, 0.25f), 0.15f);
     }
     
 }

@@ -71,6 +71,13 @@ public class BetterListView : MonoBehaviour
         //Wait for end of frame so layout can be organized
         yield return new WaitForEndOfFrame();
         disableLayoutGroups(scrollRect.content);
+
+        foreach (ListViewItem item in this.items)
+        {
+            item.doStartAnimation();
+            yield return new WaitForSeconds(0.066f);
+        }
+
         filling = false;
     }
 

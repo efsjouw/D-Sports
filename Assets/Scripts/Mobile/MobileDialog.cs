@@ -5,6 +5,8 @@ using UnityEngine.Events;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using TMPro;
+using DG.Tweening;
+using System.Collections;
 
 /// <summary>
 /// Shows a dialog with dynamically added buttons
@@ -128,6 +130,8 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public MobileDialog show(string title = "", string description = "")
     {
+        dialogObject.transform.DOPunchScale(new Vector2(0.5f, 0.5f), 1f);
+
         //Reset background
         setBackground(null, 0);
 
@@ -135,6 +139,9 @@ public class MobileDialog : Singleton<MobileDialog>
         titleText.text = title;
         setDescriptionContent(description);
         dialogParent.SetActive(true);
+
+        doShowAnimation();
+
         return this;
     }
 
@@ -151,6 +158,8 @@ public class MobileDialog : Singleton<MobileDialog>
         titleText.text = title;
         titleText.gameObject.SetActive(true);
         dialogParent.SetActive(true);
+
+        doShowAnimation();
 
         return this;
     }
@@ -170,6 +179,8 @@ public class MobileDialog : Singleton<MobileDialog>
         setDescriptionContent(description);
         dialogParent.SetActive(true);
 
+        doShowAnimation();
+
         return this;
     }
 
@@ -183,6 +194,27 @@ public class MobileDialog : Singleton<MobileDialog>
         setDescriptionContent(description);
         webRequest = request;
         //StartCoroutine(progressRoutine());
+
+        doShowAnimation();
+    }
+
+    private void doShowAnimation()
+    {
+        StartCoroutine(showAnimationRoutine());
+    }
+
+    private IEnumerator showAnimationRoutine()
+    {
+        dialogObject.transform.localScale = new Vector2(0, 0);
+        dialogObject.transform.DOScale(new Vector2(1, 1), 0.25f);
+
+        //Fix content scale being 0,0,0 after animation
+        yield return new WaitForSeconds(0.26f);      
+        foreach (Transform child in contentLayout.transform)
+        {
+            child.localScale = new Vector3(1, 1, 1);
+        }
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentLayout.GetComponent<RectTransform>());
     }
 
     //Clear functions

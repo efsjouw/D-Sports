@@ -11,5 +11,9 @@ public class ListViewItem : MonoBehaviour
     public virtual void init(ListViewDataItem data)
     {
         this.data = data;
-    }    
+    }
+
+    public virtual void doStartAnimation()
+    {
+    }
 }

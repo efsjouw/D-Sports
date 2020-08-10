@@ -100,6 +100,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.93333334, g: 0.32941177, b: 0.19607843, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -194,7 +195,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15653517d04a020489543d7617bc8f41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  url: https://duckduckgo.com/?q=
+  baseURL: https://duckduckgo.com/?q=
+  button: {fileID: 0}
 --- !u!1 &6740393883241942982
 GameObject:
   m_ObjectHideFlags: 0
@@ -291,6 +293,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -402,6 +405,7 @@ GameObject:
   - component: {fileID: 246413306439348778}
   - component: {fileID: 5681916020290483945}
   - component: {fileID: 310749978985046878}
+  - component: {fileID: 4714644074258745878}
   m_Layer: 5
   m_Name: ExerciseItem
   m_TagString: Untagged
@@ -471,6 +475,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.93333334, g: 0.32941177, b: 0.19607843, a: 0.39215687}
   m_RaycastTarget: 1
+  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -577,3 +582,17 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &4714644074258745878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7317076209010190956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4bc00d23a24fa340ba53ac4a1213639, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pressValue: 0.15
+  animationTime: 0.15
