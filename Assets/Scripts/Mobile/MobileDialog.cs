@@ -206,7 +206,7 @@ public class MobileDialog : Singleton<MobileDialog>
     private IEnumerator showAnimationRoutine()
     {
         dialogObject.transform.localScale = new Vector2(0, 0);
-        dialogObject.transform.DOScale(new Vector2(1, 1), 0.25f);
+        dialogObject.transform.DOScale(new Vector2(1, 1), 0.15f);
 
         //Fix content scale being 0,0,0 after animation
         yield return new WaitForSeconds(0.26f);      

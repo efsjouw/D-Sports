@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using DG.Tweening;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +14,14 @@ public class ExerciseModePanel : MonoBehaviour
     public Button selectionButton;
     public Button roundsButton;
 
+    [Header("Mode icons")]
+    [SerializeField] Image iconImage;
+    [SerializeField] Sprite randomIcon;
+    [SerializeField] Sprite selectionIcon;
+    [SerializeField] Sprite roundsIcon;
+
     [Header("Exercise mode")]
+    [SerializeField] Transform animationTransform;
     public TMP_Text exerciseModeTitle;
     public TMP_Text exerciseModeText;
     
@@ -77,22 +83,33 @@ public class ExerciseModePanel : MonoBehaviour
 
     private void setRandomMode()
     {
-        setButtonColor(randomButton, true);        
+        iconImage.sprite = randomIcon;
+        setButtonColor(randomButton, true);
         exerciseModeTitle.text = "Random";
         exerciseModeText.text = "Each next exercise will be picked at random.";
+        modeChangeAnimation();
     }
 
     private void setSelectionMode()
     {
+        iconImage.sprite = selectionIcon;
         setButtonColor(selectionButton, true);
         exerciseModeTitle.text = "Selection";
         exerciseModeText.text = "Select exercises from a list by yourself.";
+        modeChangeAnimation();
     }
 
     private void setRoundsMode()
     {
+        iconImage.sprite = roundsIcon;
         setButtonColor(roundsButton, true);
         exerciseModeTitle.text = "Rounds";
         exerciseModeText.text = "Give in a number of rounds without specific exercises.";
+        modeChangeAnimation();
+    }
+
+    private void modeChangeAnimation()
+    {
+        animationTransform.DOPunchScale(new Vector3(0.15f, 0.15f), 0.25f);
     }
 }

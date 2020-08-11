@@ -273,9 +273,9 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
             //If in Selection mode use exerciseCount for progress calculation, otherwise always use roundsPerSet
             int sets = currentWorkout.globalSets == 0 ? 1 : currentWorkout.globalSets;
-            int total = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection ? exerciseCount * sets : currentWorkout.roundsPerSet * sets;
+            int total = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection ? exerciseCount * sets : currentWorkout.roundsPerSet * sets;            
             progressBar.setProgress(((float)exerciseCount / total));
-        }           
+        }
     }
 
     private IEnumerator workoutRoutine()
@@ -285,14 +285,14 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         int exerciseTotal = noExercisesSelected ? currentWorkout.roundsPerSet :  currentWorkout.exercises.Count;
 
         totalWorkoutTime = currentWorkout.getTotalWorkoutTimeInSeconds(exerciseTotal);
+        workouteTimePassed = 0;
 
         for (currentSet = 0; currentSet < currentWorkout.globalSets; currentSet++)
         {
             pauseButton.interactable = false;
             setText.text = (currentSet + 1).ToString() + " / " + currentWorkout.globalSets;
             if(currentSet > 1) playSetTextAnimation();
-
-            workouteTimePassed = 0;
+            
             bool isSetRest = currentSet > 0; //Reset between sets if we passed set 0
 
             for(exerciseCount = 0; exerciseCount < exerciseTotal; exerciseCount++)
@@ -386,10 +386,8 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
                     workoutSeconds--;
                     progressBar.setProgress(workouteTimePassed / totalWorkoutTime);                    
                 }
-
-                playTimeTextAnimation();
-                roundBeep.Play();
-                yield return new WaitForSecondsRealtime(roundBeep.clip.length);
+                
+                roundBeep.Play();                
             }
         }
 
@@ -502,6 +500,8 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
         exerciseText.text = "";
+        nextExerciseText.text = "";
+
         repeatButton.interactable = false;
         pauseButton.interactable = false;
         playButton.interactable = false;

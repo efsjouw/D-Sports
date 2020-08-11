@@ -1,4 +1,5 @@
 ﻿using DG.Tweening;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,8 +15,14 @@ public class ButtonPressAnimation : MonoBehaviour
 
     void Start()
     {
-        button = GetComponent<Button>();
+        if(button == null) button = GetComponent<Button>();
         button.onClick.AddListener(playPressAnimation);
+    }
+
+    private void OnEnable()
+    {
+        if (button == null) button = GetComponent<Button>();
+        button.interactable = true;
     }
 
     private void playPressAnimation()

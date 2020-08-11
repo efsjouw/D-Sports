@@ -42,8 +42,7 @@ public class WorkoutPanel : MonoBehaviour
     public Button repsModeButton;
 
     public GameObject totalTimeParent;  //Parent object
-    public Timetext totalTimeText;      //Total round time
-    public TMP_Text totalSetText;       //Total set amount
+    public Timetext totalTimeText;      //Total round time    
 
     //Used for inspector button functions
     //TODO: uppercase enum (change inspector calls)
@@ -111,7 +110,7 @@ public class WorkoutPanel : MonoBehaviour
             //But we need to substract one rest time as the last set will not have rest, it will finish
             int subtractTime = 0;
             if (exerciseNumber > 0) subtractTime = globalRestTime;
-            return ((globalWorkTime + globalRestTime) * exerciseNumber) - subtractTime;
+            return (((globalWorkTime + globalRestTime) * exerciseNumber) * globalSets ) - subtractTime;
         }
     }
     
@@ -294,8 +293,7 @@ public class WorkoutPanel : MonoBehaviour
     {
         workoutSetupState = setupState.SelectExercises;
         PanelNavigator.Instance.currentSubPanelNavigator.goToPanel("WorkoutExercises");
-
-        totalSetText.text = "x" + newWorkout.globalSets;
+        
         totalTimeParent.gameObject.SetActive(true);
         totalTimeText.setTimeText(0);
         workoutSetupContent.gameObject.SetActive(false);
