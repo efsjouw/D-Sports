@@ -5,7 +5,7 @@ d-sports test app
 
 RANDOM 
 
-[x] next exercise doesn't show correctly
+OK
 
 SELECTION
 
@@ -23,8 +23,7 @@ OK
 
 SELECTION
 
-[x] next does nothing on first press
-[x] bar does not show progress correctly
+OK
 
 ROUNDS
 

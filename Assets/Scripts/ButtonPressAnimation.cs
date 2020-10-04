@@ -33,6 +33,7 @@ public class ButtonPressAnimation : MonoBehaviour
 
     private IEnumerator pressAnimationRoutine()
     {
+        button.gameObject.transform.DOKill(true);
         button.gameObject.transform.DOPunchScale(new Vector3(-pressValue, -pressValue), animationTime);
         yield return new WaitForSeconds(animationTime);
         button.interactable = true;

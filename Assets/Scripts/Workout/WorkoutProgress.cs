@@ -273,7 +273,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
             //If in Selection mode use exerciseCount for progress calculation, otherwise always use roundsPerSet
             int sets = currentWorkout.globalSets == 0 ? 1 : currentWorkout.globalSets;
-            int total = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection ? exerciseCount * sets : currentWorkout.roundsPerSet * sets;            
+            int total = currentWorkout.exerciseMode == WorkoutPanel.ExerciseMode.Selection ? _exerciseList.Count() * sets : currentWorkout.roundsPerSet * sets;
             progressBar.setProgress(((float)exerciseCount / total));
         }
     }

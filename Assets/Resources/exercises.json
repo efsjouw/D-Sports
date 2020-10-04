@@ -39,16 +39,34 @@
 		"name" : "jump"
 	},
 	{
+		"name" : "alternating plank"
+	},
+	{
 		"name" : "high plank"
 	},
 	{
 		"name" : "elbow plank"
 	},
 	{
+		"name" : "reverse high plank"
+	},
+	{
+		"name" : "reverse elbow plank"
+	},
+	{
 		"name" : "knee to elbow plank"
 	},
 	{
+		"name" : "side-plank left"
+	},
+	{
+		"name" : "side-plank right"
+	},
+	{
 		"name" : "burpee"
+	},
+	{
+		"name" : "alternating lunge"
 	},
 	{
 		"name" : "front lunge"
@@ -75,6 +93,9 @@
 		"name" : "rope skip"
 	},
 	{
+		"name" : "run in place"
+	},
+	{
 		"name" : "running"
 	},
 	{
@@ -90,7 +111,7 @@
 		"name" : "shoulder taps"
 	},
 	{
-		"name" : "arches"	
+		"name" : "arches"
 	},
 	{
 		"name" : "walkouts"
@@ -109,6 +130,9 @@
 	},
 	{
 		"name" : "bear walk"
+	},
+	{
+		"name" : "muscle-ups"
 	},
 	{
 		"name" : "pull-ups"
@@ -136,5 +160,8 @@
 	},
 	{
 		"name" : "knees to elbows"
+	},
+	{
+		"name" : "wall sit"
 	}
 ]

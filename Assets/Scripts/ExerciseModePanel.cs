@@ -110,6 +110,7 @@ public class ExerciseModePanel : MonoBehaviour
 
     private void modeChangeAnimation()
     {
+        animationTransform.DOKill(true);
         animationTransform.DOPunchScale(new Vector3(0.15f, 0.15f), 0.25f);
     }
 }

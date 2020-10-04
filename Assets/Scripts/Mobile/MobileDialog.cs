@@ -130,6 +130,7 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public MobileDialog show(string title = "", string description = "")
     {
+        transform.DOKill(true);
         dialogObject.transform.DOPunchScale(new Vector2(0.5f, 0.5f), 1f);
 
         //Reset background

@@ -280,7 +280,7 @@ public class WorkoutPanel : MonoBehaviour
     }
 
     private void onIncrementChanged(int value)
-    {
+    {       
         newWorkout.roundsPerSet = value;
     }
 
@@ -411,6 +411,7 @@ public class WorkoutPanel : MonoBehaviour
 
     private void doValueAnimation(Transform transform)
     {
+        transform.DOKill(true);
         transform.DOPunchScale(new Vector2(0.25f, 0.25f), 0.15f);
     }
     

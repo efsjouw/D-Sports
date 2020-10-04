@@ -12,6 +12,10 @@ public class AppManager : Singleton<AppManager>
     public UnityEvent onBackButtonPressed;
     public KeyCode backButton = KeyCode.Escape;
 
+    private MobileDialog mobileDialog;
+    private PanelNavigator panelNavigator;
+    private WorkoutProgress workoutProgress;
+
     //public Color androidNavBarColor;
     //public Color androidStatusBarColor;
 
@@ -38,49 +42,62 @@ public class AppManager : Singleton<AppManager>
 
     public void backButtonPressed()
     {
+        if (mobileDialog == null)
+        {
+            mobileDialog = MobileDialog.Instance;
+            workoutProgress = WorkoutProgress.Instance;
+        }
+
         onBackButtonPressed.Invoke();
-        if (WorkoutProgress.Instance.isInProgress())
+
+        if(mobileDialog.dialogObject.activeSelf)
+        {
+            mobileDialog.close();
+        }
+        else if (WorkoutProgress.Instance.isInProgress())
         {
             //TODO: Solve singleton abuse...
             WorkoutProgress.Instance.pause();
-            MobileDialog.Instance.show(MobileDialog.ButtonMode.AcceptDismiss, "Stop Workout", "Are you sure you want to stop the current workout?", () =>
+                mobileDialog.show(MobileDialog.ButtonMode.AcceptDismiss, "Stop Workout", "Are you sure you want to stop the current workout?", () =>
             {
-                WorkoutProgress.Instance.cancel();
-                MobileDialog.Instance.close();
+                workoutProgress.cancel();
+                mobileDialog.close();
             },
             () =>
             {
-                WorkoutProgress.Instance.play();
-                MobileDialog.Instance.close();
+                workoutProgress.play();
+                mobileDialog.close();
             });
         }
         else
         {
             PanelNavigator.Instance.goToPreviousInHistory();
             //goBackInHistory();
-        }        
+        }
     }
 
     public void goBackInHistory()
     {
+        if (panelNavigator == null) panelNavigator = PanelNavigator.Instance;
+
         bool previousPanel = false;
-        if (PanelNavigator.Instance.currentSubPanelNavigator != null)
+        if (panelNavigator.currentSubPanelNavigator != null)
         {
             //FIXME: Quick fix for list that is not really displayed in a next panel...
-            if (PanelNavigator.Instance.currentSubPanelNavigator.getCurrentIndex() == 0)
+            if (panelNavigator.currentSubPanelNavigator.getCurrentIndex() == 0)
             {
                 workoutPanel.createWorkout();
             }
             else
             {
                 //Is a subpanel assigned and can we go back in history
-                previousPanel = PanelNavigator.Instance.currentSubPanelNavigator.goToPreviousInHistory();
+                previousPanel = panelNavigator.currentSubPanelNavigator.goToPreviousInHistory();
             }
         }
         else
         {
             //If not sub panel history then check top panels
-            if (!previousPanel) previousPanel = PanelNavigator.Instance.goToPreviousInHistory();
+            if (!previousPanel) previousPanel = panelNavigator.goToPreviousInHistory();
             else Application.Quit();
         }
     }
