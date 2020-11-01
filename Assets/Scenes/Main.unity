@@ -3609,7 +3609,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.13583419}
   m_AnchorMax: {x: 1, y: 0.89783424}
-  m_AnchoredPosition: {x: 0.024902344, y: 23.8}
+  m_AnchoredPosition: {x: 0.024902344, y: 23.800049}
   m_SizeDelta: {x: 0, y: -49.647583}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &308697965
@@ -7247,6 +7247,7 @@ GameObject:
   m_Component:
   - component: {fileID: 805448971}
   - component: {fileID: 805448970}
+  - component: {fileID: 805448972}
   m_Layer: 0
   m_Name: AppManager
   m_TagString: Untagged
@@ -7285,6 +7286,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &805448972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 805448969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cddab1791fd0574da36270ff7bfaac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  path: C:\Users\Florian\Downloads\1.png
 --- !u!1 &812107913
 GameObject:
   m_ObjectHideFlags: 0
@@ -8804,7 +8818,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 18.05
+  m_fontSize: 65
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -12045,7 +12059,7 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 18
+  m_fontSize: 45
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -12062,7 +12076,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: 0
+  m_firstOverflowCharacterIndex: -1
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
