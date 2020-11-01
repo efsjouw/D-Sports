@@ -19,6 +19,14 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
     }
     public State state = State.Finished;
 
+    //Is state changed by user or by program
+    public enum StateAction
+    {
+        ByProgram,
+        ByUser,
+    }
+    public StateAction stateAction = StateAction.ByUser;
+
     //TODO: Make somekind of mvc data class?
     public ListController listController;
 
@@ -175,14 +183,14 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
     public bool isInProgress()
     {
-        return state == State.InProgress;
+        return state == State.InProgress || state == State.Paused;
     }
 
     public void cancel()
     {
         setState(State.Cancelled);
         StopCoroutine("workoutLoop");
-        AppManager.Instance.backButtonPressed();
+        PanelNavigator.Instance.goToPreviousInHistory();
     }
 
     public void play()
@@ -191,8 +199,24 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
         paused = false;
     }
 
+    /// <summary>
+    /// Pause by user with button, cannot have param because this doesn't work in inspector
+    /// DO NOT USE IN CODE
+    /// </summary>
     public void pause()
     {
+        stateAction = StateAction.ByUser;
+        setState(State.Paused);
+        paused = true;
+    }
+
+    /// <summary>
+    /// Pause by program
+    /// </summary>
+    /// <param name="stateAction"></param>
+    public void pause2()
+    {
+        stateAction = StateAction.ByProgram;
         setState(State.Paused);
         paused = true;
     }
@@ -555,7 +579,7 @@ public class WorkoutProgress : Singleton<WorkoutProgress>
 
     private void setCancelledState()
     {
-        paused = false;
+        paused = true;
         cancelled = true;
         Screen.sleepTimeout = SleepTimeout.SystemSetting;
     }

@@ -8,6 +8,6 @@ public class DialogOrientaion : MonoBehaviour
 
     private void OnEnable()
     {
-        mobileDialog.determineOrientation();
+        //mobileDialog.determineOrientation();
     }
 }

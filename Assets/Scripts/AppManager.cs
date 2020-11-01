@@ -42,30 +42,30 @@ public class AppManager : Singleton<AppManager>
 
     public void backButtonPressed()
     {
-        if (mobileDialog == null)
-        {
-            mobileDialog = MobileDialog.Instance;
-            workoutProgress = WorkoutProgress.Instance;
-        }
+        if (mobileDialog == null) mobileDialog = MobileDialog.Instance;
+        if (workoutProgress == null) workoutProgress = WorkoutProgress.Instance;        
 
         onBackButtonPressed.Invoke();
 
-        if(mobileDialog.dialogObject.activeSelf)
+        if(mobileDialog.dialogParent.activeSelf)
         {
             mobileDialog.close();
         }
-        else if (WorkoutProgress.Instance.isInProgress())
-        {
-            //TODO: Solve singleton abuse...
-            WorkoutProgress.Instance.pause();
-                mobileDialog.show(MobileDialog.ButtonMode.AcceptDismiss, "Stop Workout", "Are you sure you want to stop the current workout?", () =>
+        else if (workoutProgress.isInProgress())
+        {            
+            if(workoutProgress.state != WorkoutProgress.State.Paused) workoutProgress.pause2();
+            mobileDialog.show(MobileDialog.ButtonMode.AcceptDismiss, "Stop Workout", "Are you sure you want to stop the current workout?", () =>
             {
                 workoutProgress.cancel();
                 mobileDialog.close();
             },
             () =>
             {
-                workoutProgress.play();
+                Debug.Log(workoutProgress.stateAction);
+                if (workoutProgress.state == WorkoutProgress.State.Paused)
+                {
+                    if(workoutProgress.stateAction == WorkoutProgress.StateAction.ByProgram) workoutProgress.play();                    
+                }
                 mobileDialog.close();
             });
         }

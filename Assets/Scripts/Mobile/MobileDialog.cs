@@ -11,7 +11,7 @@ using System.Collections;
 /// <summary>
 /// Shows a dialog with dynamically added buttons
 /// </summary>
-[RequireComponent(typeof(Button))]
+[RequireComponent(typeof(DeviceResolutionChange))]
 public class MobileDialog : Singleton<MobileDialog>
 {
     public enum ButtonMode
@@ -61,6 +61,7 @@ public class MobileDialog : Singleton<MobileDialog>
     [HideInInspector] public bool downloading;
 
     //Private
+    private DeviceResolutionChange deviceResolutionChange;
 
     private Vector2 cachedDialogObjectAnchorMax;
     private RectTransform dialogObjectRectTransform;
@@ -70,10 +71,15 @@ public class MobileDialog : Singleton<MobileDialog>
 
     void Start()
     {
+        deviceResolutionChange = GetComponent<DeviceResolutionChange>();
+
         dialogObjectRectTransform = dialogObject.GetComponent<RectTransform>();
         cachedDialogObjectAnchorMax = dialogObjectRectTransform.anchorMax;
         buttonLayoutRectransform = buttonLayout.GetComponent<RectTransform>();
         setCustomPrefabs();
+
+        deviceResolutionChange.OnOrientationChange.AddListener(onDeviceOrientationChange);
+        deviceResolutionChange.OnResolutionChange.AddListener(onDeviceResolutionChange);
     }
 
     private void setCustomPrefabs()
@@ -85,23 +91,26 @@ public class MobileDialog : Singleton<MobileDialog>
         }
     }
 
-    /// <summary>
-    /// Note that this will not work in-editor
-    /// It will always return DeviceOrientation.Unknown
-    /// </summary>
-    /// <returns></returns>
-    public void determineOrientation()
+    private void onDeviceOrientationChange(DeviceOrientation orientation)
     {
-        switch (Input.deviceOrientation)
+        determineOrientation(orientation);
+    }
+
+    private void onDeviceResolutionChange(Vector2 resolution)
+    {
+        if(resolution.x < resolution.y) determineOrientation(DeviceOrientation.Portrait);
+        else if (resolution.y < resolution.x) determineOrientation(DeviceOrientation.LandscapeLeft);
+    }
+
+    public void determineOrientation(DeviceOrientation orientation)
+    {
+        switch (orientation)
         {
             case DeviceOrientation.Portrait: onPortrait(); break;
             case DeviceOrientation.PortraitUpsideDown: onPortrait(); break;
             case DeviceOrientation.LandscapeLeft: onLandscape(); break;
             case DeviceOrientation.LandscapeRight: onLandscape(); break;
         }
-
-        //FIXMME: This shit doesn't just work at all
-        //onLandscape();
     }
 
     private void Update()
@@ -130,6 +139,8 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public MobileDialog show(string title = "", string description = "")
     {
+        determineOrientation(Input.deviceOrientation);
+
         transform.DOKill(true);
         dialogObject.transform.DOPunchScale(new Vector2(0.5f, 0.5f), 1f);
 
@@ -148,6 +159,8 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public MobileDialog show(ButtonMode buttonMode, string title = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
     {
+        determineOrientation(Input.deviceOrientation);
+
         //Reset background
         setBackground(null, 0);
 
@@ -167,6 +180,8 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public MobileDialog show(ButtonMode buttonMode, string title = "", string description = "", UnityAction positiveCallback = null, UnityAction negativeCallback = null)
     {
+        determineOrientation(Input.deviceOrientation);
+
         //Reset background
         setBackground(null, 0);
 
@@ -187,6 +202,8 @@ public class MobileDialog : Singleton<MobileDialog>
 
     public void show(string title, string description, UnityWebRequest request, bool abortable = true, UnityAction negativeCallback = null)
     {
+        determineOrientation(Input.deviceOrientation);
+
         if (abortable) createCancelButton(dismissDefault, negativeCallback);
         else setButtonMode(ButtonMode.None);
 

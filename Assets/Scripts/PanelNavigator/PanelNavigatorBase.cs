@@ -11,6 +11,7 @@ using UnityEngine.UI;
 /// </summary>
 [RequireComponent(typeof(Canvas))]
 [RequireComponent(typeof(GraphicRaycaster))]
+[RequireComponent(typeof(DeviceResolutionChange))]
 public abstract class PanelNavigatorBase : MonoBehaviour
 {
     public SubPanelNavigator currentSubPanelNavigator;
@@ -31,6 +32,7 @@ public abstract class PanelNavigatorBase : MonoBehaviour
     public Action<string> onHardLockedAction;
 
     private Canvas canvas;
+    private DeviceResolutionChange deviceResolutionChange;
 
     [System.Serializable]
     public class PanelEntry
@@ -63,6 +65,7 @@ public abstract class PanelNavigatorBase : MonoBehaviour
 #endif        
 
         canvas = GetComponent<Canvas>();
+        deviceResolutionChange = GetComponent<DeviceResolutionChange>();
         if (useDefaultOrientation) Screen.orientation = defaultOrientation;
         if (startIndex > panelEntries.Length - 1)
         {
@@ -82,6 +85,8 @@ public abstract class PanelNavigatorBase : MonoBehaviour
     void Start()
     {
         onStartCallback.Invoke();
+        //deviceResolutionChange.OnOrientationChange.AddListener(onDeviceOrientationChange);
+        //deviceResolutionChange.OnResolutionChange.AddListener(onDeviceResolutionChange);
     }
 
     private void OnEnable()
@@ -98,6 +103,29 @@ public abstract class PanelNavigatorBase : MonoBehaviour
     private void Update()
     {
         if (enableEscapeKey && Input.GetKeyDown(backButton)) goToPreviousInHistory();
+    }
+
+    private void onDeviceOrientationChange(DeviceOrientation orientation)
+    {
+        checkPanelOrientation();
+    }
+
+    void onDeviceResolutionChange(Vector2 resolution)
+    {
+        checkPanelOrientation();
+    }
+
+    void checkPanelOrientation()
+    {
+        ScreenOrientation panelOrientation = panelEntries[currentIndex].orientation;
+        if (panelOrientation == ScreenOrientation.AutoRotation && AndroidDetectAutoRotation.IsAutoRotateEnabled())
+        {
+            Screen.orientation = panelOrientation;
+        }
+        else
+        {
+            Screen.orientation = panelOrientation;
+        }
     }
 
     /// <summary>
